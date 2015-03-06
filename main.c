@@ -8,11 +8,7 @@
 #include <openssl/evp.h>
 #include "gonepass.h"
 
-struct master_key {
-    int level, key_len;
-    char id[33];
-    uint8_t key_data[1056 + EVP_MAX_BLOCK_LENGTH];
-};
+
 
 struct master_key level3_key, level5_key;
 int credentials_loaded = 0;
@@ -179,7 +175,7 @@ void decrypt_master_key(json_t * input, const char * master_pwd, struct master_k
     strcpy(out->id, identifier);
 }
 
-int decrypt_item(json_t * input, char ** output) {
+int decrypt_item(json_t * input, struct credentials_bag * bag, char ** output) {
     const char *encrypted_encoded_payload, *security_level;
     EVP_CIPHER_CTX ctx;
 
@@ -190,9 +186,9 @@ int decrypt_item(json_t * input, char ** output) {
 
     struct master_key * master_key = NULL;
     if(strcmp(security_level, "SL5") == 0)
-        master_key = &level5_key;
+        master_key = &bag->level5_key;
     else if(strcmp(security_level, "SL3") == 0)
-        master_key = &level3_key;
+        master_key = &bag->level3_key;
 
     uint8_t * encrypted_payload, salt[8], *real_encrypted_payload;
     uint8_t my_key[16], my_iv[16];
@@ -244,17 +240,26 @@ int decrypt_item(json_t * input, char ** output) {
     return out_size;
 }
 
-void clear_credentials() {
-    memset(&level3_key, 0, sizeof(level3_key));
-    memset(&level5_key, 0, sizeof(level5_key));
+void clear_credentials(struct credentials_bag * bag) {
+    memset(&bag->level3_key, 0, sizeof(bag->level3_key));
+    memset(&bag->level5_key, 0, sizeof(bag->level5_key));
     credentials_loaded = 0;
 }
 
-int load_credentials(GonepassAppWindow * win) {
+int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
     json_error_t errmsg;
+
+    GonepassUnlockDialog * unlock_dialog = gonepass_unlock_dialog_new(win);
+    int dlg_return = gtk_dialog_run(GTK_DIALOG(unlock_dialog));
+    if(dlg_return != GTK_RESPONSE_OK) {
+        fprintf(stderr, "The unlock dialog returned a mysterious exit code %d\n", dlg_return);
+        return 1;
+    }
+    const gchar * passwd = gonepass_unlock_dialog_get_pass(unlock_dialog);
+    const gchar * vault_folder = gonepass_unlock_dialog_get_vault_path(unlock_dialog);
+
     char vault_path[PATH_MAX];
     GSettings * settings = g_settings_new ("org.gtk.gonepass");
-    char * vault_folder = g_settings_get_string(settings, "vault-path");
     snprintf(vault_path, sizeof(vault_path), "%s/data/default/encryptionKeys.js", vault_folder);
     json_t * encryption_keys_json = json_load_file(vault_path, 0, &errmsg);
 
@@ -270,25 +275,16 @@ int load_credentials(GonepassAppWindow * win) {
         fprintf(stderr, "Expecting array of keys!\n");
         return 1;
     }
-
-    GonepassUnlockDialog * unlock_dialog = gonepass_unlock_dialog_new(win);
-    int dlg_return = gtk_dialog_run(GTK_DIALOG(unlock_dialog));
-    if(dlg_return != GTK_RESPONSE_OK) {
-        fprintf(stderr, "The unlock dialog returned a mysterious exit code %d\n", dlg_return);
-        return 1;
-    }
-    gchar * passwd = gonepass_unlock_dialog_get_pass(unlock_dialog);
-
     json_array_foreach(key_array, index, key_value) {
         struct master_key tmpkey;
         decrypt_master_key(key_value, passwd, &tmpkey);
         struct master_key *target_key;
         switch(tmpkey.level) {
             case 3:
-                target_key = &level3_key;
+                target_key = &out->level3_key;
                 break;
             case 5:
-                target_key = &level5_key;
+                target_key = &out->level5_key;
                 break;
             default:
                 fprintf(stderr, "Unknown key level %d\n", tmpkey.level);
@@ -299,7 +295,10 @@ int load_credentials(GonepassAppWindow * win) {
     }
 
     gtk_window_close(GTK_WINDOW(unlock_dialog));
-    credentials_loaded = 1;
+    out->credentials_loaded = 1;
+    g_settings_set_string(settings, "vault-path", vault_folder);
+    strncpy(out->vault_path, vault_folder, PATH_MAX);
+
     return 0;
 }
 

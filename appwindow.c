@@ -26,15 +26,16 @@ struct _GonepassAppWindowPrivate {
     GtkTreeModel * item_list_filterer;
     GtkCellRenderer * item_list_renderer;
     GtkLabel * item_name;
+
+    struct credentials_bag bag;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(GonepassAppWindow, gonepass_app_window, GTK_TYPE_APPLICATION_WINDOW);
 
 static void update_item_list(GonepassAppWindow * win) {
     GonepassAppWindowPrivate * priv = gonepass_app_window_get_instance_private(win);
-    char vault_path[PATH_MAX], *vault_directory = g_settings_get_string(priv->settings, "vault-path");
-
-    snprintf(vault_path, PATH_MAX, "%s/data/default/contents.js", vault_directory);
+    char vault_path[PATH_MAX];
+    snprintf(vault_path, PATH_MAX, "%s/data/default/contents.js", priv->bag.vault_path);
     json_error_t json_err;
     json_t * contents_js = json_load_file(vault_path, 0, &json_err);
     if(contents_js == NULL) {
@@ -85,7 +86,6 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     GtkTreeModel * model;
     gchar * uuid, *name;
     char item_file_path[PATH_MAX], *encrypted_text, *security_level;
-    char * vault_dir = g_settings_get_string(priv->settings, "vault-path");
     json_error_t json_err;
 
     if(!gtk_tree_selection_get_selected(selection, &model, &iter))
@@ -94,7 +94,7 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     gtk_tree_model_get(model, &iter, 0, &uuid, -1);
     gtk_tree_model_get(model, &iter, 1, &name, -1);
 
-    sprintf(item_file_path, "%s/data/default/%s.1password", vault_dir, uuid);
+    sprintf(item_file_path, "%s/data/default/%s.1password", priv->bag.vault_path, uuid);
 
     char namebuf[1024];
     snprintf(namebuf, sizeof(namebuf) - 1, "<span size=\"x-large\">%s</span>", name);
@@ -108,7 +108,7 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     g_free(uuid);
 
     char * decrypted_payload;
-    int payload_size = decrypt_item(item_json, &decrypted_payload);
+    int payload_size = decrypt_item(item_json, &priv->bag, &decrypted_payload);
     json_decref(item_json);
 
     json_t * decrypted_item = json_loadb(decrypted_payload, payload_size, 0, &json_err);
@@ -119,14 +119,11 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
 
     const char *item_name;
     json_t * fields = NULL, *sections = NULL;
-    if(json_unpack(decrypted_item,
+    json_unpack(decrypted_item,
         "{ s?:o s?o }",
         "fields", &fields,
         "sections", &sections
-    ) == -1) {
-        printf("Error getting fields/sections\n");
-        return;
-    }
+    );
 
     GtkTreeStore * treestore = gtk_tree_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
     if(fields) {
@@ -254,6 +251,7 @@ static void gonepass_app_window_init(GonepassAppWindow * win) {
     gtk_tree_model_filter_set_visible_func(
         GTK_TREE_MODEL_FILTER(priv->item_list_filterer), item_list_filter_viewable, win, NULL);
 
+    load_credentials(win, &priv->bag);
     update_item_list(win);
 
     gtk_tree_view_set_model(priv->item_list, GTK_TREE_MODEL(priv->item_list_filterer));

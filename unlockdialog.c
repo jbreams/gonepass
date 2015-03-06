@@ -19,6 +19,7 @@ struct _GonepassUnlockDialogPrivate
   GSettings *settings;
   GtkButton * unlock_button;
   GtkEntry * password_field;
+  GtkFileChooserButton * vault_chooser;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(GonepassUnlockDialog, gonepass_unlock_dialog, GTK_TYPE_DIALOG)
@@ -30,11 +31,19 @@ gonepass_unlock_dialog_init (GonepassUnlockDialog *prefs)
   priv = gonepass_unlock_dialog_get_instance_private (prefs);
   priv->settings = g_settings_new ("org.gtk.gonepass");
   gtk_widget_init_template (GTK_WIDGET (prefs));
+
+  gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(priv->vault_chooser),
+      g_settings_get_string(priv->settings, "vault-path"));
 }
 
-gchar * gonepass_unlock_dialog_get_pass(GonepassUnlockDialog *dlg) {
+const gchar * gonepass_unlock_dialog_get_pass(GonepassUnlockDialog *dlg) {
     GonepassUnlockDialogPrivate * priv = gonepass_unlock_dialog_get_instance_private(dlg);
     return gtk_entry_get_text(priv->password_field);
+}
+
+const gchar * gonepass_unlock_dialog_get_vault_path(GonepassUnlockDialog * dlg) {
+    GonepassUnlockDialogPrivate * priv = gonepass_unlock_dialog_get_instance_private(dlg);
+    return gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(priv->vault_chooser));
 }
 
 static void
@@ -57,6 +66,7 @@ gonepass_unlock_dialog_class_init (GonepassUnlockDialogClass *class)
                                               "/org/gtk/gonepass/unlock.ui");
   gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (class), GonepassUnlockDialog, password_field);
   gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (class), GonepassUnlockDialog, unlock_button);
+  gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (class), GonepassUnlockDialog, vault_chooser);
 
 }
 

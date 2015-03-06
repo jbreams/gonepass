@@ -19,22 +19,8 @@ static void quit_activated(GSimpleAction * action, GVariant * param, gpointer ap
     g_application_quit(G_APPLICATION(app));
 }
 
-static void
-preferences_activated (GSimpleAction *action,
-                       GVariant      *parameter,
-                       gpointer       app)
-{
-  GonepassPrefs *prefs;
-  GtkWindow *win;
-
-  win = gtk_application_get_active_window (GTK_APPLICATION (app));
-  prefs = gonepass_prefs_new (GONEPASS_APP_WINDOW (win));
-  gtk_window_present (GTK_WINDOW (prefs));
-}
-
 static GActionEntry app_entries[] = {
-    { "quit", quit_activated, NULL, NULL, NULL },
-    { "preferences", preferences_activated, NULL, NULL, NULL }
+    { "quit", quit_activated, NULL, NULL, NULL }
 };
 
 static void gonepass_app_startup(GApplication * app) {
@@ -55,8 +41,6 @@ static void gonepass_app_startup(GApplication * app) {
 
 static void gonepass_app_activate(GApplication * app) {
     GonepassAppWindow * win = gonepass_app_window_new(GONEPASS_APP(app));
-    if(load_credentials(win) == 1)
-        exit(1);
     gtk_window_present(GTK_WINDOW(win));
 }
 
