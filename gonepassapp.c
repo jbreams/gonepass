@@ -54,8 +54,6 @@ static void gonepass_app_open(GApplication * app, GFile ** file, gint n_files, c
     else
         win = gonepass_app_window_new(GONEPASS_APP(app));
 
-    if(load_credentials(win) == 1)
-        exit(1);
     gtk_window_present(GTK_WINDOW(win));
 }
 
