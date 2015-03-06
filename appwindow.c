@@ -26,6 +26,9 @@ struct _GonepassAppWindowPrivate {
     GtkTreeModel * item_list_filterer;
     GtkCellRenderer * item_list_renderer;
     GtkLabel * item_name;
+    GtkTextBuffer * notes_buffer;
+    GtkTextView * notes_view;
+    GtkExpander * notes_expander;
 
     struct credentials_bag bag;
 };
@@ -121,7 +124,7 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     char * notes_plain = NULL;
     json_t * fields = NULL, *sections = NULL;
     json_unpack(decrypted_item,
-        "{ s?:o s?o }",
+        "{ s?:o s?o s?s }",
         "fields", &fields,
         "sections", &sections,
         "notesPlain", &notes_plain
@@ -183,6 +186,14 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
                     -1);
             }
         }
+    }
+
+    if(notes_plain) {
+        gtk_text_buffer_set_text(priv->notes_buffer, notes_plain, -1);
+        gtk_expander_set_expanded(priv->notes_expander, TRUE);
+    } else {
+        gtk_text_buffer_set_text(priv->notes_buffer, "", -1);
+        gtk_expander_set_expanded(priv->notes_expander, FALSE);
     }
 
     gtk_tree_view_set_model(priv->item_entries_list, GTK_TREE_MODEL(treestore));
@@ -284,7 +295,6 @@ static void gonepass_app_window_init(GonepassAppWindow * win) {
 
     g_signal_connect(G_OBJECT(priv->item_search), "search-changed", G_CALLBACK(item_search_changed), win);
     g_signal_connect(G_OBJECT(priv->item_entries_list), "button-press-event", G_CALLBACK(right_click_event_cb), win);
-
 }
 
 static void gonepass_app_window_dispose(GObject * object) {
@@ -309,6 +319,13 @@ static void gonepass_app_window_class_init(GonepassAppWindowClass * class) {
         GonepassAppWindow, item_entries_list);
     gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
         GonepassAppWindow, item_name);
+    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
+        GonepassAppWindow, notes_view);
+    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
+        GonepassAppWindow, notes_buffer);
+    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
+        GonepassAppWindow, notes_expander);
+
 }
 
 GonepassAppWindow * gonepass_app_window_new(GonepassApp * app) {
