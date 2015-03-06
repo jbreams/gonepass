@@ -118,11 +118,13 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     }
 
     const char *item_name;
+    char * notes_plain = NULL;
     json_t * fields = NULL, *sections = NULL;
     json_unpack(decrypted_item,
         "{ s?:o s?o }",
         "fields", &fields,
-        "sections", &sections
+        "sections", &sections,
+        "notesPlain", &notes_plain
     );
 
     GtkTreeStore * treestore = gtk_tree_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
@@ -148,32 +150,31 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
         }
     }
     else if(sections) {
-        json_t *section;
+        json_t *section_obj;
         int index;
-        json_array_foreach(sections, index, section) {
+        json_array_foreach(sections, index, section_obj) {
             char * section_title;
             json_t * section_fields, *cur_item;
             GtkTreeIter section_iter;
-            json_unpack(section, "{ s:o s:s }",
+            json_unpack(section_obj, "{ s:o s:s }",
                 "fields", &section_fields,
                 "title", &section_title
             );
-
             if(strlen(section_title) > 0) {
                 gtk_tree_store_append(treestore, &section_iter, NULL);
                 gtk_tree_store_set(treestore, &section_iter, 0, section_title, -1);
             } else
                 section_title = NULL;
 
-            json_array_foreach(section_fields, index, cur_item) {
+            int sub_index;
+            json_array_foreach(section_fields, sub_index, cur_item) {
                 GtkTreeIter child_iter;
                 char * item_title, *item_value, *item_type;
                 if(json_unpack(cur_item, "{s:s s:s s:s}",
                     "t", &item_title,
                     "v", &item_value,
-                    "k", &item_type) != 0) {
+                    "k", &item_type) != 0)
                     continue;
-                }
                 gtk_tree_store_append(treestore, &child_iter,
                     section_title != NULL ? &section_iter : NULL);
                 gtk_tree_store_set(treestore, &child_iter,
