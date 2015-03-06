@@ -4,6 +4,12 @@
   <menu id="appmenu">
     <section>
       <item>
+        <attribute name="label" translatable="yes">_Load</attribute>
+        <attribute name="action">app.load</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="label" translatable="yes">_Quit</attribute>
         <attribute name="action">app.quit</attribute>
       </item>

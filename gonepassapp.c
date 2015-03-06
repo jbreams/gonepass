@@ -19,8 +19,14 @@ static void quit_activated(GSimpleAction * action, GVariant * param, gpointer ap
     g_application_quit(G_APPLICATION(app));
 }
 
+static void load_activated(GSimpleAction * action, GVariant * param, gpointer app) {
+    GonepassAppWindow * win = gonepass_app_window_new(GONEPASS_APP(app));
+    gtk_window_present(GTK_WINDOW(win));
+}
+
 static GActionEntry app_entries[] = {
-    { "quit", quit_activated, NULL, NULL, NULL }
+    { "quit", quit_activated, NULL, NULL, NULL },
+    { "load", load_activated, NULL, NULL, NULL }
 };
 
 static void gonepass_app_startup(GApplication * app) {
