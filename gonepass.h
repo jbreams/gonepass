@@ -33,7 +33,17 @@ typedef struct _GonepassPrefsClass     GonepassPrefsClass;
 GType                   gonepass_prefs_get_type     (void);
 GonepassPrefs        *gonepass_prefs_new          (GonepassAppWindow *win);
 
-int decrypt_item(json_t * input, char ** output);
-const char * get_vault_path();
+#define GONEPASS_UNLOCK_DIALOG_TYPE (gonepass_unlock_dialog_get_type ())
+#define GONEPASS_UNLOCK_DIALOG(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GONEPASS_UNLOCK_DIALOG_TYPE, GonepassUnlockDialog))
 
+typedef struct _GonepassUnlockDialog          GonepassUnlockDialog;
+typedef struct _GonepassUnlockDialogClass     GonepassUnlockDialogClass;
+
+GType                   gonepass_unlock_dialog_get_type     (void);
+GonepassUnlockDialog        *gonepass_unlock_dialog_new          (GonepassAppWindow *win);
+gchar * gonepass_unlock_dialog_get_pass(GonepassUnlockDialog *dlg);
+
+int decrypt_item(json_t * input, char ** output);
+int load_credentials(GonepassAppWindow * win);
+void clear_credentials();
 #endif

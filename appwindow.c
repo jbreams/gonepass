@@ -32,9 +32,11 @@ G_DEFINE_TYPE_WITH_PRIVATE(GonepassAppWindow, gonepass_app_window, GTK_TYPE_APPL
 
 static void update_item_list(GonepassAppWindow * win) {
     GonepassAppWindowPrivate * priv = gonepass_app_window_get_instance_private(win);
+    char vault_path[PATH_MAX], *vault_directory = g_settings_get_string(priv->settings, "vault-path");
 
+    snprintf(vault_path, PATH_MAX, "%s/data/default/contents.js", vault_directory);
     json_error_t json_err;
-    json_t * contents_js = json_load_file("/home/jreams/Dropbox/testvault/demo.agilekeychain/data/default/contents.js", 0, &json_err);
+    json_t * contents_js = json_load_file(vault_path, 0, &json_err);
     if(contents_js == NULL) {
         fprintf(stderr, "Error loading contents.js: %s", json_err.text);
         return;
@@ -83,6 +85,7 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     GtkTreeModel * model;
     gchar * uuid, *name;
     char item_file_path[PATH_MAX], *encrypted_text, *security_level;
+    char * vault_dir = g_settings_get_string(priv->settings, "vault-path");
     json_error_t json_err;
 
     if(!gtk_tree_selection_get_selected(selection, &model, &iter))
@@ -90,7 +93,8 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
 
     gtk_tree_model_get(model, &iter, 0, &uuid, -1);
     gtk_tree_model_get(model, &iter, 1, &name, -1);
-    sprintf(item_file_path, "/home/jreams/Dropbox/testvault/demo.agilekeychain/data/default/%s.1password", uuid);
+
+    sprintf(item_file_path, "%s/data/default/%s.1password", vault_dir, uuid);
 
     char namebuf[1024];
     snprintf(namebuf, sizeof(namebuf) - 1, "<span size=\"x-large\">%s</span>", name);

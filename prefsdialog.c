@@ -29,18 +29,20 @@ gonepass_prefs_choose_vault(GtkFileChooserButton * widget, gpointer data) {
     GonepassPrefs * win = GONEPASS_PREFS(data);
     GonepassPrefsPrivate * priv = gonepass_prefs_get_instance_private(win);
     gchar * cur_dir = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
-    strcpy(vault_path, cur_dir);
+    g_settings_set_string(priv->settings, "vault-path", cur_dir);
 }
 
 static void
 gonepass_prefs_init (GonepassPrefs *prefs)
 {
   GonepassPrefsPrivate *priv;
-
   priv = gonepass_prefs_get_instance_private (prefs);
+  priv->settings = g_settings_new ("org.gtk.gonepass");
   gtk_widget_init_template (GTK_WIDGET (prefs));
   g_signal_connect(G_OBJECT(priv->vault_chooser), "file-set",
       G_CALLBACK(gonepass_prefs_choose_vault), prefs);
+  gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(priv->vault_chooser),
+      g_settings_get_string(priv->settings, "vault-path"));
 }
 
 static void

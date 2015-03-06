@@ -6,20 +6,10 @@
       <summary>Font</summary>
       <description>The font to be used for content.</description>
     </key>
-    <key name="transition" type="s">
-      <choices>
-        <choice value='none'/>
-        <choice value='crossfade'/>
-        <choice value='slide-left-right'/>
-      </choices>
-      <default>'none'</default>
-      <summary>Transition</summary>
-      <description>The transition to use when switching tabs.</description>
-    </key>
-    <key name="show-words" type="b">
-      <default>false</default>
-      <summary>Show words</summary>
-      <description>Whether to show a word list in the sidebar</description>
+    <key name="vault-path" type="s">
+      <default>'~/Dropbox/1Password/1Password.agilekeychain/'</default>
+      <summary>Path to 1Password vault</summary>
+      <description>The full path to the 1Password vault</description>
     </key>
   </schema>
 </schemalist>

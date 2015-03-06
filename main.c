@@ -14,6 +14,9 @@ struct master_key {
     uint8_t key_data[1056 + EVP_MAX_BLOCK_LENGTH];
 };
 
+struct master_key level3_key, level5_key;
+int credentials_loaded = 0;
+
 int decode_base64(const char * input, ssize_t input_len, uint8_t ** output) {
     BIO * b64, *bmem;
 
@@ -63,9 +66,6 @@ void openssl_key(uint8_t * password, size_t pwlen, uint8_t * salt, size_t saltle
     MD5_Update(&ctx, salt, saltlen);
     MD5_Final(ivout, &ctx);
 }
-
-struct master_key level3_key, level5_key;
-int credentials_loaded = 0;
 
 void decrypt_master_key(json_t * input, const char * master_pwd, struct master_key * out) {
     const char * encoded_key_data, *validation, *level, *identifier;
@@ -236,7 +236,7 @@ int decrypt_item(json_t * input, char ** output) {
     out_size = outlen;
     if(!EVP_CipherFinal_ex(&ctx, *output + outlen, &outlen)) {
         EVP_CIPHER_CTX_cleanup(&ctx);
-        fprintf(stderr, "Couldn't decrypt validation key!\n");
+        fprintf(stderr, "Couldn't decrypt payload!\n");
         exit(1);
     }
     out_size += outlen;
@@ -244,15 +244,19 @@ int decrypt_item(json_t * input, char ** output) {
     return out_size;
 }
 
-char vault_path[PATH_MAX];
-
-const char * get_vault_path() {
-    return vault_path;
+void clear_credentials() {
+    memset(&level3_key, 0, sizeof(level3_key));
+    memset(&level5_key, 0, sizeof(level5_key));
+    credentials_loaded = 0;
 }
 
-int main(int argc, char ** argv) {
+int load_credentials(GonepassAppWindow * win) {
     json_error_t errmsg;
-    json_t * encryption_keys_json = json_load_file("/home/jreams/Dropbox/testvault/demo.agilekeychain/data/default/encryptionKeys.js", 0, &errmsg);
+    char vault_path[PATH_MAX];
+    GSettings * settings = g_settings_new ("org.gtk.gonepass");
+    char * vault_folder = g_settings_get_string(settings, "vault-path");
+    snprintf(vault_path, sizeof(vault_path), "%s/data/default/encryptionKeys.js", vault_folder);
+    json_t * encryption_keys_json = json_load_file(vault_path, 0, &errmsg);
 
     if(encryption_keys_json == NULL) {
         fprintf(stderr, "Error loading encryption keys! %s\n", errmsg.text);
@@ -267,9 +271,17 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
+    GonepassUnlockDialog * unlock_dialog = gonepass_unlock_dialog_new(win);
+    int dlg_return = gtk_dialog_run(GTK_DIALOG(unlock_dialog));
+    if(dlg_return != GTK_RESPONSE_OK) {
+        fprintf(stderr, "The unlock dialog returned a mysterious exit code %d\n", dlg_return);
+        return 1;
+    }
+    gchar * passwd = gonepass_unlock_dialog_get_pass(unlock_dialog);
+
     json_array_foreach(key_array, index, key_value) {
         struct master_key tmpkey;
-        decrypt_master_key(key_value, "demo", &tmpkey);
+        decrypt_master_key(key_value, passwd, &tmpkey);
         struct master_key *target_key;
         switch(tmpkey.level) {
             case 3:
@@ -285,6 +297,13 @@ int main(int argc, char ** argv) {
 
         memcpy(target_key, &tmpkey, sizeof(tmpkey));
     }
-    g_setenv("GSETTINGS_SCHEMA_DIR", ".", FALSE);
+
+    gtk_window_close(GTK_WINDOW(unlock_dialog));
+    credentials_loaded = 1;
+    return 0;
+}
+
+int main(int argc, char ** argv) {
+   g_setenv("GSETTINGS_SCHEMA_DIR", ".", FALSE);
     return g_application_run(G_APPLICATION(gonepass_app_new()), argc, argv);
 }
