@@ -8,8 +8,6 @@
 #include <openssl/evp.h>
 #include "gonepass.h"
 
-
-
 struct master_key level3_key, level5_key;
 int credentials_loaded = 0;
 
