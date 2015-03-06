@@ -35,7 +35,7 @@ GonepassApp * gonepass_app_new(void);
 
 GType gonepass_app_window_get_type(void);
 GonepassAppWindow * gonepass_app_window_new(GonepassApp * app);
-void gonepass_app_window_open(GonepassAppWindow * win, GFile * file);
+int gonepass_app_window_credentials_loaded(GonepassAppWindow * win);
 
 #define GONEPASS_UNLOCK_DIALOG_TYPE (gonepass_unlock_dialog_get_type ())
 #define GONEPASS_UNLOCK_DIALOG(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GONEPASS_UNLOCK_DIALOG_TYPE, GonepassUnlockDialog))

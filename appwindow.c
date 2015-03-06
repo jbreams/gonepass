@@ -242,6 +242,11 @@ static gboolean right_click_event_cb(GtkWidget * widget, GdkEvent * event, gpoin
     return TRUE;
 }
 
+int gonepass_app_window_credentials_loaded(GonepassAppWindow * win) {
+    GonepassAppWindowPrivate * priv = gonepass_app_window_get_instance_private(win);
+    return priv->bag.credentials_loaded;
+}
+
 static void gonepass_app_window_init(GonepassAppWindow * win) {
     GonepassAppWindowPrivate * priv;
     GtkBuilder * builder;
@@ -263,7 +268,10 @@ static void gonepass_app_window_init(GonepassAppWindow * win) {
     gtk_tree_model_filter_set_visible_func(
         GTK_TREE_MODEL_FILTER(priv->item_list_filterer), item_list_filter_viewable, win, NULL);
 
-    load_credentials(win, &priv->bag);
+    if(load_credentials(win, &priv->bag) == -1) {
+        return;
+    }
+    gtk_window_set_title(GTK_WINDOW(win), priv->bag.vault_path);
     update_item_list(win);
 
     gtk_tree_view_set_model(priv->item_list, GTK_TREE_MODEL(priv->item_list_filterer));
@@ -329,7 +337,8 @@ static void gonepass_app_window_class_init(GonepassAppWindowClass * class) {
 }
 
 GonepassAppWindow * gonepass_app_window_new(GonepassApp * app) {
-    return g_object_new(GONEPASS_APP_WINDOW_TYPE, "application", app, NULL);
+    GonepassAppWindow * win = g_object_new(GONEPASS_APP_WINDOW_TYPE, "application", app, NULL);
+    return win;
 }
 
 void gonepass_app_window_open(GonepassAppWindow * win, GFile * file) {

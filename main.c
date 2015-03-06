@@ -63,7 +63,7 @@ void openssl_key(uint8_t * password, size_t pwlen, uint8_t * salt, size_t saltle
     MD5_Final(ivout, &ctx);
 }
 
-void decrypt_master_key(json_t * input, const char * master_pwd, struct master_key * out) {
+int decrypt_master_key(json_t * input, const char * master_pwd, struct master_key * out) {
     const char * encoded_key_data, *validation, *level, *identifier;
     int iterations, outlen;
     EVP_CIPHER_CTX ctx;
@@ -111,7 +111,7 @@ void decrypt_master_key(json_t * input, const char * master_pwd, struct master_k
     if(!EVP_CipherFinal_ex(&ctx, out->key_data + outlen, &outlen)) {
         EVP_CIPHER_CTX_cleanup(&ctx);
         fprintf(stderr, "Couldn't decrypt master key!\n");
-        exit(1);
+        return -1;
     }
     out->key_len += outlen;
     EVP_CIPHER_CTX_cleanup(&ctx);
@@ -158,14 +158,14 @@ void decrypt_master_key(json_t * input, const char * master_pwd, struct master_k
     if(!EVP_CipherFinal_ex(&ctx, decrypted_validation_key + outlen, &outlen)) {
         EVP_CIPHER_CTX_cleanup(&ctx);
         fprintf(stderr, "Couldn't decrypt validation key!\n");
-        exit(1);
+        return -1;
     }
 
     free(validation_data);
 
     if(memcmp(decrypted_validation_key, out->key_data, out->key_len) != 0) {
         fprintf(stderr, "Validation cleartext doesn't match key data!\n");
-        exit(1);
+        return -1;
     }
 
     if(strcmp(level, "SL3") == 0)
@@ -233,7 +233,7 @@ int decrypt_item(json_t * input, struct credentials_bag * bag, char ** output) {
     if(!EVP_CipherFinal_ex(&ctx, *output + outlen, &outlen)) {
         EVP_CIPHER_CTX_cleanup(&ctx);
         fprintf(stderr, "Couldn't decrypt payload!\n");
-        exit(1);
+        return -1;
     }
     out_size += outlen;
     free(encrypted_payload);
@@ -249,11 +249,13 @@ void clear_credentials(struct credentials_bag * bag) {
 int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
     json_error_t errmsg;
 
+    out->credentials_loaded = 0;
     GonepassUnlockDialog * unlock_dialog = gonepass_unlock_dialog_new(win);
     int dlg_return = gtk_dialog_run(GTK_DIALOG(unlock_dialog));
     if(dlg_return != GTK_RESPONSE_OK) {
         fprintf(stderr, "The unlock dialog returned a mysterious exit code %d\n", dlg_return);
-        return 1;
+        gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
+        return -1;
     }
     const gchar * passwd = gonepass_unlock_dialog_get_pass(unlock_dialog);
     const gchar * vault_folder = gonepass_unlock_dialog_get_vault_path(unlock_dialog);
@@ -265,7 +267,8 @@ int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
 
     if(encryption_keys_json == NULL) {
         fprintf(stderr, "Error loading encryption keys! %s\n", errmsg.text);
-        return 1;
+        gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
+        return -1;
     }
 
     json_t * key_array = json_object_get(encryption_keys_json, "list");
@@ -273,11 +276,15 @@ int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
     size_t index;
     if(!json_is_array(key_array)) {
         fprintf(stderr, "Expecting array of keys!\n");
+        gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
         return 1;
     }
     json_array_foreach(key_array, index, key_value) {
         struct master_key tmpkey;
-        decrypt_master_key(key_value, passwd, &tmpkey);
+        if(decrypt_master_key(key_value, passwd, &tmpkey) == -1) {
+            gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
+            return -1;
+        }
         struct master_key *target_key;
         switch(tmpkey.level) {
             case 3:
@@ -288,13 +295,13 @@ int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
                 break;
             default:
                 fprintf(stderr, "Unknown key level %d\n", tmpkey.level);
-                exit(1);
+                return -1;
         }
 
         memcpy(target_key, &tmpkey, sizeof(tmpkey));
     }
 
-    gtk_window_close(GTK_WINDOW(unlock_dialog));
+    gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
     out->credentials_loaded = 1;
     g_settings_set_string(settings, "vault-path", vault_folder);
     strncpy(out->vault_path, vault_folder, PATH_MAX);
