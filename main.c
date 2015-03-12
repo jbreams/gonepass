@@ -11,6 +11,8 @@
 struct master_key level3_key, level5_key;
 int credentials_loaded = 0;
 
+void errmsg_box(const char * msg, ...);
+
 int decode_base64(const char * input, ssize_t input_len, uint8_t ** output) {
     BIO * b64, *bmem;
 
@@ -43,8 +45,6 @@ void encode_base64(uint8_t * input, ssize_t input_len, BUF_MEM ** output) {
 
 void openssl_key(uint8_t * password, size_t pwlen, uint8_t * salt, size_t saltlen,
         uint8_t * keyout, uint8_t * ivout) {
-    const int rounds = 2;
-    int i;
     MD5_CTX ctx;
 
     // Initial digest is password + salt
@@ -108,7 +108,7 @@ int decrypt_master_key(json_t * input, const char * master_pwd, struct master_ke
 
     if(!EVP_CipherFinal_ex(&ctx, out->key_data + outlen, &outlen)) {
         EVP_CIPHER_CTX_cleanup(&ctx);
-        fprintf(stderr, "Couldn't decrypt master key!\n");
+        errmsg_box("Couldn't decrypt master key!");
         return -1;
     }
     out->key_len += outlen;
@@ -155,14 +155,14 @@ int decrypt_master_key(json_t * input, const char * master_pwd, struct master_ke
     );
     if(!EVP_CipherFinal_ex(&ctx, decrypted_validation_key + outlen, &outlen)) {
         EVP_CIPHER_CTX_cleanup(&ctx);
-        fprintf(stderr, "Couldn't decrypt validation key!\n");
+        errmsg_box("Couldn't decrypt validation key!");
         return -1;
     }
 
     free(validation_data);
 
     if(memcmp(decrypted_validation_key, out->key_data, out->key_len) != 0) {
-        fprintf(stderr, "Validation cleartext doesn't match key data!\n");
+        errmsg_box("Validation cleartext doesn't match key data!");
         return -1;
     }
 
@@ -230,7 +230,7 @@ int decrypt_item(json_t * input, struct credentials_bag * bag, char ** output) {
     out_size = outlen;
     if(!EVP_CipherFinal_ex(&ctx, *output + outlen, &outlen)) {
         EVP_CIPHER_CTX_cleanup(&ctx);
-        fprintf(stderr, "Couldn't decrypt payload!\n");
+        errmsg_box("Couldn't decrypt payload!");
         return -1;
     }
     out_size += outlen;
@@ -244,14 +244,35 @@ void clear_credentials(struct credentials_bag * bag) {
     credentials_loaded = 0;
 }
 
+GonepassAppWindow * error_parent_window = NULL;
+void errmsg_box(const char * msg, ...) {
+    GtkDialogFlags flags = GTK_DIALOG_DESTROY_WITH_PARENT;
+
+    // Drop the message if there's no parent window
+    if(error_parent_window == NULL)
+        return;
+    va_list ap;
+    va_start(ap, msg);
+    char * formatted_msg;
+    vasprintf(&formatted_msg, msg, ap);
+    GtkWidget * dlg = gtk_message_dialog_new (
+        GTK_WINDOW(error_parent_window),
+        flags,
+        GTK_MESSAGE_ERROR,
+        GTK_BUTTONS_CLOSE,
+        formatted_msg
+    );
+    gtk_dialog_run (GTK_DIALOG (dlg));
+    gtk_widget_destroy (dlg);
+}
+
 int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
     json_error_t errmsg;
-
+    error_parent_window = win;
     out->credentials_loaded = 0;
     GonepassUnlockDialog * unlock_dialog = gonepass_unlock_dialog_new(win);
     int dlg_return = gtk_dialog_run(GTK_DIALOG(unlock_dialog));
     if(dlg_return != GTK_RESPONSE_OK) {
-        fprintf(stderr, "The unlock dialog returned a mysterious exit code %d\n", dlg_return);
         gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
         return -1;
     }
@@ -264,7 +285,8 @@ int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
     json_t * encryption_keys_json = json_load_file(vault_path, 0, &errmsg);
 
     if(encryption_keys_json == NULL) {
-        fprintf(stderr, "Error loading encryption keys! %s\n", errmsg.text);
+
+        errmsg_box("Error loading encryption keys! %s", errmsg.text);
         gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
         return -1;
     }
@@ -273,7 +295,7 @@ int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
     json_t *key_value;
     size_t index;
     if(!json_is_array(key_array)) {
-        fprintf(stderr, "Expecting array of keys!\n");
+        errmsg_box("Expecting array of keys!\n");
         gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
         return 1;
     }
@@ -292,7 +314,7 @@ int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
                 target_key = &out->level5_key;
                 break;
             default:
-                fprintf(stderr, "Unknown key level %d\n", tmpkey.level);
+                errmsg_box("Unknown key level %d", tmpkey.level);
                 return -1;
         }
 
@@ -304,6 +326,7 @@ int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
     g_settings_set_string(settings, "vault-path", vault_folder);
     strncpy(out->vault_path, vault_folder, PATH_MAX);
 
+    error_parent_window = NULL;
     return 0;
 }
 
