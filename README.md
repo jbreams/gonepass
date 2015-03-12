@@ -1,5 +1,5 @@
 # Gonepass
-Do you love 1Password? Do you also run Linux? Don't you hate that your 1Password is trapped on on-linux? Use Gonepassword!
+Do you love 1Password? Do you also run Linux? Don't you hate that your 1Password data can't be used on Linux? Use Gonepassword!
 
 ## Building
 Building gonepassword assumes you have the following things installed on your system
@@ -7,8 +7,12 @@ Building gonepassword assumes you have the following things installed on your sy
 * Openssl
 * Jansson (https://jansson.readthedocs.org/en/2.7/)
 * pkg-config
+* GNU make
+* a working C compiler
 
-A real build system is coming, I promise!
+Right now it's only been tested on Gnome 3, so milage may vary.
+
+A real build system is coming, I promise! For now just run make, and it will produce an executable called gonepassapp.
 
 ## Great, now what?
 When you start one password point it at your password vault in Dropbox. You should select the folder that ends with `agilekeychain` and type in your master password.
