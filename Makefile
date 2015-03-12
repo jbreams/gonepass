@@ -5,7 +5,7 @@ LIBS = `$(PKGCONFIG) --libs gtk+-3.0` `$(PKGCONFIG) --libs jansson` -lcrypto
 GLIB_COMPILE_RESOURCES = `$(PKGCONFIG) --variable=glib_compile_resources gio-2.0`
 GLIB_COMPILE_SCHEMAS = `$(PKGCONFIG) --variable=glib_compile_schemas gio-2.0`
 
-SRC = resources.c gonepassapp.c appwindow.c main.c unlockdialog.c
+SRC = resources.c gonepassapp.c appwindow.c main.c unlockdialog.c item_builder.c
 
 OBJS = $(SRC:.c=.o)
 

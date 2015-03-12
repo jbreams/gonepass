@@ -52,4 +52,6 @@ int decrypt_item(json_t * input, struct credentials_bag * bag, char ** output);
 int load_credentials(GonepassAppWindow * win, struct credentials_bag * out);
 void clear_credentials(struct credentials_bag * bag);
 
+int process_entries(json_t * input, GtkWidget * container);
+
 #endif

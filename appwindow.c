@@ -20,15 +20,12 @@ struct _GonepassAppWindowPrivate {
     GtkWidget * item_list_box;
     GtkSearchEntry * item_search;
     GtkTreeView * item_list;
-    GtkTreeView * item_entries_list;
     GtkListStore * item_list_store;
     GtkTreeModel * item_list_sorter;
     GtkTreeModel * item_list_filterer;
-    GtkCellRenderer * item_list_renderer;
     GtkLabel * item_name;
-    GtkTextBuffer * notes_buffer;
-    GtkTextView * notes_view;
-    GtkExpander * notes_expander;
+
+    GtkBox * entries_container;
 
     struct credentials_bag bag;
 };
@@ -83,6 +80,10 @@ static void item_search_changed(GtkSearchEntry * entry, gpointer data) {
     gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(priv->item_list_filterer));
 }
 
+static void clear_entries_container_cb(GtkWidget * child, gpointer parent) {
+    gtk_container_remove(GTK_CONTAINER(parent), child);
+}
+
 void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWindow * win) {
     GtkTreeIter iter;
     GonepassAppWindowPrivate *priv = gonepass_app_window_get_instance_private(win);
@@ -121,125 +122,11 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     }
 
     const char *item_name;
-    char * notes_plain = NULL;
-    json_t * fields = NULL, *sections = NULL;
-    json_unpack(decrypted_item,
-        "{ s?:o s?o s?s }",
-        "fields", &fields,
-        "sections", &sections,
-        "notesPlain", &notes_plain
-    );
-
-    GtkTreeStore * treestore = gtk_tree_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-    if(fields) {
-        json_t *value;
-        int index;
-        json_array_foreach(fields, index, value) {
-            char * item_value, *designation, *item_type;
-            GtkTreeIter cur_item;
-            if(json_unpack(value, "{s:s s:s s:s}",
-                "value", &item_value,
-                "designation", &designation,
-                "type", &item_type
-            ) == -1)
-                continue;
-
-            gtk_tree_store_append(treestore, &cur_item, NULL);
-            gtk_tree_store_set(treestore, &cur_item,
-                0, designation,
-                1, item_value,
-                -1
-            );
-        }
-    }
-    else if(sections) {
-        json_t *section_obj;
-        int index;
-        json_array_foreach(sections, index, section_obj) {
-            char * section_title;
-            json_t * section_fields, *cur_item;
-            GtkTreeIter section_iter;
-            json_unpack(section_obj, "{ s:o s:s }",
-                "fields", &section_fields,
-                "title", &section_title
-            );
-            if(strlen(section_title) > 0) {
-                gtk_tree_store_append(treestore, &section_iter, NULL);
-                gtk_tree_store_set(treestore, &section_iter, 0, section_title, -1);
-            } else
-                section_title = NULL;
-
-            int sub_index;
-            json_array_foreach(section_fields, sub_index, cur_item) {
-                GtkTreeIter child_iter;
-                char * item_title, *item_value, *item_type;
-                if(json_unpack(cur_item, "{s:s s:s s:s}",
-                    "t", &item_title,
-                    "v", &item_value,
-                    "k", &item_type) != 0)
-                    continue;
-                gtk_tree_store_append(treestore, &child_iter,
-                    section_title != NULL ? &section_iter : NULL);
-                gtk_tree_store_set(treestore, &child_iter,
-                    0, item_title,
-                    1, item_value,
-                    -1);
-            }
-        }
-    }
-
-    if(notes_plain) {
-        gtk_text_buffer_set_text(priv->notes_buffer, notes_plain, -1);
-        gtk_expander_set_expanded(priv->notes_expander, TRUE);
-    } else {
-        gtk_text_buffer_set_text(priv->notes_buffer, "", -1);
-        gtk_expander_set_expanded(priv->notes_expander, FALSE);
-    }
-
-    gtk_tree_view_set_model(priv->item_entries_list, GTK_TREE_MODEL(treestore));
-    gtk_tree_view_expand_all(priv->item_entries_list);
+    gtk_container_foreach(GTK_CONTAINER(priv->entries_container),
+            clear_entries_container_cb, priv->entries_container);
+    process_entries(decrypted_item, GTK_WIDGET(priv->entries_container));
+    gtk_widget_show_all(GTK_WIDGET(priv->entries_container));
     json_decref(decrypted_item);
-}
-
-static gboolean right_click_event_cb(GtkWidget * widget, GdkEvent * event, gpointer data) {
-    GonepassAppWindow * win = GONEPASS_APP_WINDOW(data);
-    GonepassAppWindowPrivate * priv = gonepass_app_window_get_instance_private(win);
-    guint button;
-    gdk_event_get_button(event, &button);
-    gdouble x = 0, y = 0;
-
-    if(button != GDK_BUTTON_SECONDARY || gdk_event_get_coords(event, &x, &y) == FALSE)
-        return TRUE;
-
-    GtkTreePath * path;
-    GtkTreeViewColumn * column;
-    gint cellx, celly;
-
-    if(!gtk_tree_view_get_path_at_pos(priv->item_entries_list,
-        x,
-        y,
-        &path,
-        &column,
-        &cellx,
-        &celly
-    ))
-        return TRUE;
-
-    GtkTreeIter iter;
-    GtkTreeModel * model = gtk_tree_view_get_model(priv->item_entries_list);
-    gtk_tree_model_get_iter(model, &iter, path);
-    gtk_tree_path_free(path);
-
-    const char * value;
-    gtk_tree_model_get(model, &iter, 1, &value, -1);
-
-    GdkAtom atom = gdk_atom_intern_static_string("CLIPBOARD");
-
-    GtkClipboard * clipboard = gtk_clipboard_get(atom);
-    gtk_clipboard_set_text(clipboard, value, -1);
-    gtk_clipboard_store(clipboard);
-
-    return TRUE;
 }
 
 int gonepass_app_window_credentials_loaded(GonepassAppWindow * win) {
@@ -287,22 +174,7 @@ static void gonepass_app_window_init(GonepassAppWindow * win) {
             NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(priv->item_list), column);
 
-    column = gtk_tree_view_column_new_with_attributes(
-        "Name",
-        renderer,
-        "text", 0,
-        NULL);
-    gtk_tree_view_append_column(priv->item_entries_list, column);
-
-    column = gtk_tree_view_column_new_with_attributes(
-        "Value",
-        renderer,
-        "text", 1,
-        NULL);
-    gtk_tree_view_append_column(priv->item_entries_list, column);
-
     g_signal_connect(G_OBJECT(priv->item_search), "search-changed", G_CALLBACK(item_search_changed), win);
-    g_signal_connect(G_OBJECT(priv->item_entries_list), "button-press-event", G_CALLBACK(right_click_event_cb), win);
 }
 
 static void gonepass_app_window_dispose(GObject * object) {
@@ -324,16 +196,9 @@ static void gonepass_app_window_class_init(GonepassAppWindowClass * class) {
     gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
         GonepassAppWindow, item_list);
     gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
-        GonepassAppWindow, item_entries_list);
+        GonepassAppWindow, entries_container);
     gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
         GonepassAppWindow, item_name);
-    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
-        GonepassAppWindow, notes_view);
-    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
-        GonepassAppWindow, notes_buffer);
-    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
-        GonepassAppWindow, notes_expander);
-
 }
 
 GonepassAppWindow * gonepass_app_window_new(GonepassApp * app) {
