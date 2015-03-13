@@ -22,17 +22,12 @@ static void handle_reveal_button(GtkButton * button, gpointer data) {
         gtk_button_set_label(button, "_Reveal");
 }
 
-static int process_fields_raw(json_t * input, GtkWidget * container,
+static int process_fields_raw(json_t * input, GtkWidget * container, int * index,
     char * value_key, char * type_key, char * title_key) {
-    GtkWidget * details_grid = gtk_grid_new();
-    gtk_container_add(GTK_CONTAINER(container), details_grid);
 
-    gtk_grid_set_row_spacing(GTK_GRID(details_grid), 2);
-    gtk_grid_set_column_spacing(GTK_GRID(details_grid), 2);
-
-    int row_index;
+    int row_index = *index, tmp_index;
     json_t * row_obj;
-    json_array_foreach(input, row_index, row_obj) {
+    json_array_foreach(input, tmp_index, row_obj) {
         char * item_value, *designation, *item_type;
         GtkTreeIter cur_item;
         if(json_unpack(row_obj, "{s:s s:s s:s}",
@@ -69,17 +64,19 @@ static int process_fields_raw(json_t * input, GtkWidget * container,
             gtk_entry_set_width_chars(GTK_ENTRY(value_widget), 65);
         }
 
-        gtk_grid_attach(GTK_GRID(details_grid), label_widget, 0, row_index, 1, 1);
-        gtk_grid_attach(GTK_GRID(details_grid), value_widget, 1, row_index, copy_button == NULL ? 3 : 1, 1);
+        gtk_grid_attach(GTK_GRID(container), label_widget, 0, row_index, 1, 1);
+        gtk_grid_attach(GTK_GRID(container), value_widget, 1, row_index, copy_button == NULL ? 3 : 1, 1);
         if(copy_button) {
-            gtk_grid_attach(GTK_GRID(details_grid), copy_button, 2, row_index, 1, 1);
-            gtk_grid_attach(GTK_GRID(details_grid), reveal_button, 3, row_index, 1, 1);
+            gtk_grid_attach(GTK_GRID(container), copy_button, 2, row_index, 1, 1);
+            gtk_grid_attach(GTK_GRID(container), reveal_button, 3, row_index, 1, 1);
         }
+        row_index++;
     }
+    *index = row_index;
     return 0;
 }
 
-static int process_section(json_t * input, GtkWidget * container) {
+static int process_section(json_t * input, GtkWidget * container, int * index) {
     char * section_title;
     json_t * section_fields;
     json_unpack(input, "{ s:o s:s }",
@@ -87,37 +84,24 @@ static int process_section(json_t * input, GtkWidget * container) {
         "title", &section_title
     );
 
-    char * section_title_mnemonic;
-    size_t title_len = strlen(section_title);
-    if(title_len == 0)
-        section_title_mnemonic = strdup("Details");
-    else {
-        section_title_mnemonic = calloc(1, strlen(section_title) + 2);
-        sprintf(section_title_mnemonic, "_%s", section_title);
-    }
-    GtkWidget * expander = gtk_expander_new_with_mnemonic(section_title_mnemonic);
-    free(section_title_mnemonic);
-
-    int rc = process_fields_raw(section_fields, expander, "v", "k", "t");
+    int row_index = *index;
+    GtkWidget * title_label = gtk_label_new(strlen(section_title) > 0 ? section_title : "Details");
+    gtk_grid_attach(GTK_GRID(container), title_label, 0, row_index++, 4, 1);
+    int rc = process_fields_raw(section_fields, container, &row_index, "v", "k", "t");
     if(rc != 0)
         return rc;
-
-    gtk_expander_set_expanded(GTK_EXPANDER(expander), TRUE);
-    //gtk_container_add(GTK_CONTAINER(container), expander);
-    gtk_box_pack_start(GTK_BOX(container), expander, FALSE, FALSE, 2);
+    *index = row_index;
     return 0;
 }
 
-static int process_fields(json_t * input, GtkWidget * container) {
-    GtkWidget * expander = gtk_expander_new_with_mnemonic("_Details");
-    int rc = process_fields_raw(input, expander, "value", "type", "designation");
-    if(rc != 0)
-        return rc;
+static int process_fields(json_t * input, GtkWidget * container, int * index) {
+    int row_index = *index;
+    GtkWidget * title_label = gtk_label_new("Details");
+    gtk_grid_attach(GTK_GRID(container), title_label, 0, row_index++, 4, 1);
 
-    gtk_expander_set_expanded(GTK_EXPANDER(expander), TRUE);
-    //gtk_container_add(GTK_CONTAINER(container), expander);
-    gtk_box_pack_start(GTK_BOX(container), expander, FALSE, FALSE, 2);
-    return 0;
+    int rc = process_fields_raw(input, container, &row_index, "value", "type", "designation");
+    *index = row_index;
+    return rc;
 }
 
 int process_entries(json_t * input, GtkWidget * container) {
@@ -129,16 +113,22 @@ int process_entries(json_t * input, GtkWidget * container) {
         "sections", &sections,
         "notesPlain", &notes_plain
     );
-    int rc;
+    int rc = 0;
+
+    GtkWidget * details_grid = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(details_grid), 5);
+    gtk_grid_set_column_spacing(GTK_GRID(details_grid), 3);
+    gtk_box_pack_start(GTK_BOX(container), details_grid, TRUE, TRUE, 2);
+    int row_index = 0;
 
     if(fields)
-        rc = process_fields(fields, container);
+        rc = process_fields(fields, details_grid, &row_index);
     else if(sections) {
         json_t * section_obj;
         int section_index;
 
         json_array_foreach(sections, section_index, section_obj) {
-            rc = process_section(section_obj, container);
+            rc = process_section(section_obj, details_grid, &row_index);
             if(rc != 0)
                 break;
         }
@@ -148,9 +138,11 @@ int process_entries(json_t * input, GtkWidget * container) {
         return rc;
 
     if(notes_plain) {
-        GtkWidget * expander = gtk_expander_new_with_mnemonic("_Notes");
+        GtkWidget * notes_label = gtk_label_new("Notes");
+        gtk_grid_attach(GTK_GRID(details_grid), notes_label, 0, row_index++, 4, 1);
+
         GtkWidget * notes_field = gtk_text_view_new();
-        gtk_container_add(GTK_CONTAINER(expander), notes_field);
+        gtk_grid_attach(GTK_GRID(details_grid), notes_field, 0, row_index++, 4, 1);
         GtkTextBuffer * buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(notes_field));
         gtk_text_buffer_set_text(buffer, notes_plain, -1);
         g_object_set(G_OBJECT(notes_field),
@@ -159,8 +151,7 @@ int process_entries(json_t * input, GtkWidget * container) {
         );
         gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(notes_field), GTK_WRAP_WORD);
         gtk_widget_set_valign(notes_field, GTK_ALIGN_FILL);
-        gtk_expander_set_expanded(GTK_EXPANDER(expander), TRUE);
-        gtk_box_pack_start(GTK_BOX(container), expander, TRUE, TRUE, 2);
+        gtk_widget_set_halign(notes_field, GTK_ALIGN_FILL);
     }
 
     return 0;
