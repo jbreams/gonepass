@@ -17,9 +17,15 @@ A real build system is coming, I promise! For now just run make, and it will pro
 ## Great, now what?
 When you start one password point it at your password vault in Dropbox. You should select the folder that ends with `agilekeychain` and type in your master password.
 
+![alt tag](https://raw.github.com/jbreams/gonepass/gh-pages/images/gonepass_unlock.png)
+
 If you want to load up multiple password vaults, just go to the Application menu and click `Load`, it will pop up a new window for selecting another password vault.
 
 The window for selecting password vaults will remember the last password vault it successfully loaded.
+
+Then just browse through your passwords!
+
+![alt tag](https://raw.github.com/jbreams/gonepass/gh-pages/images/gonepass_main.png)
 
 ## That's pretty useful, can I update my items?
 Not yet, sorry.
