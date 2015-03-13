@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Gonepass : GTK+ 1Password reader">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Gonepass</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/jbreams/gonepass">View on GitHub</a>
+
+          <h1 id="project_title">Gonepass</h1>
+          <h2 id="project_tagline">GTK+ 1Password reader</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/jbreams/gonepass/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/jbreams/gonepass/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="gonepass" class="anchor" href="#gonepass" aria-hidden="true"><span class="octicon octicon-link"></span></a>Gonepass</h1>
+
+<p>Do you love 1Password? Do you also run Linux? Don't you hate that your 1Password data can't be used on Linux? Use Gonepassword!</p>
+
+<h2>
+<a id="building" class="anchor" href="#building" aria-hidden="true"><span class="octicon octicon-link"></span></a>Building</h2>
+
+<p>Building gonepassword assumes you have the following things installed on your system</p>
+
+<ul>
+<li>Gtk+3</li>
+<li>Openssl</li>
+<li>Jansson (<a href="https://jansson.readthedocs.org/en/2.7/">https://jansson.readthedocs.org/en/2.7/</a>)</li>
+<li>pkg-config</li>
+<li>GNU make</li>
+<li>a working C compiler</li>
+</ul>
+
+<p>Right now it's only been tested on Gnome 3, so milage may vary.</p>
+
+<p>A real build system is coming, I promise! For now just run make, and it will produce an executable called gonepassapp.</p>
+
+<h2>
+<a id="great-now-what" class="anchor" href="#great-now-what" aria-hidden="true"><span class="octicon octicon-link"></span></a>Great, now what?</h2>
+
+<p>When you start one password point it at your password vault in Dropbox. You should select the folder that ends with <code>agilekeychain</code> and type in your master password.</p>
+
+<p>If you want to load up multiple password vaults, just go to the Application menu and click <code>Load</code>, it will pop up a new window for selecting another password vault.</p>
+
+<p>The window for selecting password vaults will remember the last password vault it successfully loaded.</p>
+
+<h2>
+<a id="thats-pretty-useful-can-i-update-my-items" class="anchor" href="#thats-pretty-useful-can-i-update-my-items" aria-hidden="true"><span class="octicon octicon-link"></span></a>That's pretty useful, can I update my items?</h2>
+
+<p>Not yet, sorry.</p>
+
+<h2>
+<a id="something-isnt-working" class="anchor" href="#something-isnt-working" aria-hidden="true"><span class="octicon octicon-link"></span></a>Something isn't working?</h2>
+
+<p>Sorry about that, open an issue.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Gonepass maintained by <a href="https://github.com/jbreams">jbreams</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
