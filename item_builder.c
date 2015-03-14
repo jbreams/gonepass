@@ -38,10 +38,11 @@ static int process_fields_raw(json_t * input, GtkWidget * container, int * index
             continue;
 
         GtkWidget * label_widget = gtk_label_new(designation);
-        gtk_label_set_width_chars(GTK_LABEL(label_widget), 20);
-        gtk_widget_set_halign(label_widget, GTK_ALIGN_START);
+        gtk_widget_set_halign(GTK_WIDGET(label_widget), GTK_ALIGN_END);
+        gtk_widget_set_margin_end(GTK_WIDGET(label_widget), 5);
         GtkWidget * value_widget = gtk_entry_new();
         gtk_entry_set_text(GTK_ENTRY(value_widget), item_value);
+        gtk_widget_set_hexpand(GTK_WIDGET(value_widget), TRUE);
 
         g_object_set(G_OBJECT(value_widget),
             "editable", FALSE,
@@ -58,10 +59,8 @@ static int process_fields_raw(json_t * input, GtkWidget * container, int * index
             reveal_button = gtk_button_new_with_mnemonic("_Reveal");
             g_signal_connect(G_OBJECT(reveal_button), "clicked",
                 G_CALLBACK(handle_reveal_button), value_widget);
-            gtk_entry_set_width_chars(GTK_ENTRY(value_widget), 40);
         }
         else {
-            gtk_entry_set_width_chars(GTK_ENTRY(value_widget), 65);
         }
 
         gtk_grid_attach(GTK_GRID(container), label_widget, 0, row_index, 1, 1);
@@ -118,6 +117,8 @@ int process_entries(json_t * input, GtkWidget * container) {
     GtkWidget * details_grid = gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(details_grid), 5);
     gtk_grid_set_column_spacing(GTK_GRID(details_grid), 3);
+    gtk_widget_set_margin_end(GTK_WIDGET(details_grid), 5);
+    gtk_widget_set_margin_start(GTK_WIDGET(details_grid), 5);
     gtk_box_pack_start(GTK_BOX(container), details_grid, TRUE, TRUE, 2);
     int row_index = 0;
 
@@ -142,6 +143,8 @@ int process_entries(json_t * input, GtkWidget * container) {
         gtk_grid_attach(GTK_GRID(details_grid), notes_label, 0, row_index++, 4, 1);
 
         GtkWidget * notes_field = gtk_text_view_new();
+        gtk_widget_set_hexpand(GTK_WIDGET(notes_field), TRUE);
+        gtk_widget_set_vexpand(GTK_WIDGET(notes_field), TRUE);
         gtk_grid_attach(GTK_GRID(details_grid), notes_field, 0, row_index++, 4, 1);
         GtkTextBuffer * buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(notes_field));
         gtk_text_buffer_set_text(buffer, notes_plain, -1);
@@ -150,8 +153,6 @@ int process_entries(json_t * input, GtkWidget * container) {
             NULL
         );
         gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(notes_field), GTK_WRAP_WORD);
-        gtk_widget_set_valign(notes_field, GTK_ALIGN_FILL);
-        gtk_widget_set_halign(notes_field, GTK_ALIGN_FILL);
     }
 
     return 0;
