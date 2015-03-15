@@ -48,3 +48,5 @@ target_link_libraries(gonepass
 # GSettings
 include(GSettings)
 add_schemas(gonepass ${CMAKE_CURRENT_SOURCE_DIR})
+
+install (TARGETS gonepass DESTINATION bin)
