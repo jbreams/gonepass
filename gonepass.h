@@ -37,19 +37,12 @@ GType gonepass_app_window_get_type(void);
 GonepassAppWindow * gonepass_app_window_new(GonepassApp * app);
 int gonepass_app_window_credentials_loaded(GonepassAppWindow * win);
 
-#define GONEPASS_UNLOCK_DIALOG_TYPE (gonepass_unlock_dialog_get_type ())
-#define GONEPASS_UNLOCK_DIALOG(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GONEPASS_UNLOCK_DIALOG_TYPE, GonepassUnlockDialog))
-
-typedef struct _GonepassUnlockDialog          GonepassUnlockDialog;
-typedef struct _GonepassUnlockDialogClass     GonepassUnlockDialogClass;
-
-GType                   gonepass_unlock_dialog_get_type     (void);
-GonepassUnlockDialog        *gonepass_unlock_dialog_new          (GonepassAppWindow *win);
-const gchar * gonepass_unlock_dialog_get_pass(GonepassUnlockDialog *dlg);
-const gchar * gonepass_unlock_dialog_get_vault_path(GonepassUnlockDialog * dlg);
-
 int decrypt_item(json_t * input, struct credentials_bag * bag, char ** output);
-int load_credentials(GonepassAppWindow * win, struct credentials_bag * out);
+int load_credentials(
+    GonepassAppWindow * win,
+    const gchar * password,
+    const gchar * vault_path,
+    struct credentials_bag * out);
 void clear_credentials(struct credentials_bag * bag);
 
 int process_entries(json_t * input, GtkWidget * container);

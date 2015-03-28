@@ -266,18 +266,14 @@ void errmsg_box(const char * msg, ...) {
     gtk_widget_destroy (dlg);
 }
 
-int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
+int load_credentials(
+        GonepassAppWindow * win,
+        const gchar * passwd,
+        const gchar * vault_folder,
+        struct credentials_bag * out) {
     json_error_t errmsg;
     error_parent_window = win;
     out->credentials_loaded = 0;
-    GonepassUnlockDialog * unlock_dialog = gonepass_unlock_dialog_new(win);
-    int dlg_return = gtk_dialog_run(GTK_DIALOG(unlock_dialog));
-    if(dlg_return != GTK_RESPONSE_OK) {
-        gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
-        return -1;
-    }
-    const gchar * passwd = gonepass_unlock_dialog_get_pass(unlock_dialog);
-    const gchar * vault_folder = gonepass_unlock_dialog_get_vault_path(unlock_dialog);
 
     char vault_path[PATH_MAX];
     GSettings * settings = g_settings_new ("org.gtk.gonepass");
@@ -287,7 +283,6 @@ int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
     if(encryption_keys_json == NULL) {
 
         errmsg_box("Error loading encryption keys! %s", errmsg.text);
-        gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
         return -1;
     }
 
@@ -296,13 +291,11 @@ int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
     size_t index;
     if(!json_is_array(key_array)) {
         errmsg_box("Expecting array of keys!\n");
-        gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
         return 1;
     }
     json_array_foreach(key_array, index, key_value) {
         struct master_key tmpkey;
         if(decrypt_master_key(key_value, passwd, &tmpkey) == -1) {
-            gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
             return -1;
         }
         struct master_key *target_key;
@@ -321,7 +314,6 @@ int load_credentials(GonepassAppWindow * win, struct credentials_bag * out) {
         memcpy(target_key, &tmpkey, sizeof(tmpkey));
     }
 
-    gtk_widget_destroy(GTK_WIDGET(unlock_dialog));
     out->credentials_loaded = 1;
     g_settings_set_string(settings, "vault-path", vault_folder);
     strncpy(out->vault_path, vault_folder, PATH_MAX);

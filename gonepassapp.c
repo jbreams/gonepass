@@ -21,13 +21,8 @@ static void quit_activated(GSimpleAction * action, GVariant * param, gpointer ap
 
 static void load_activated(GSimpleAction * action, GVariant * param, gpointer app) {
     GonepassAppWindow * win = gonepass_app_window_new(GONEPASS_APP(app));
-    if(gonepass_app_window_credentials_loaded(win)) {
-        gtk_application_add_window(app, GTK_WINDOW(win));
-        gtk_window_present(GTK_WINDOW(win));
-    }
-    else {
-        gtk_widget_destroy(GTK_WIDGET(win));
-    }
+    gtk_application_add_window(app, GTK_WINDOW(win));
+    gtk_window_present(GTK_WINDOW(win));
 }
 
 static GActionEntry app_entries[] = {
@@ -53,10 +48,7 @@ static void gonepass_app_startup(GApplication * app) {
 
 static void gonepass_app_activate(GApplication * app) {
     GonepassAppWindow * win = gonepass_app_window_new(GONEPASS_APP(app));
-    if(gonepass_app_window_credentials_loaded(win))
-        gtk_window_present(GTK_WINDOW(win));
-    else
-        gtk_widget_destroy(GTK_WIDGET(win));
+    gtk_window_present(GTK_WINDOW(win));
 }
 
 static void gonepass_app_class_init(GonepassAppClass * class) {

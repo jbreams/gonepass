@@ -3,6 +3,5 @@
   <gresource prefix="/org/gtk/gonepass">
     <file preprocess="xml-stripblanks">gonepass.glade</file>
     <file preprocess="xml-stripblanks">appmenu.ui</file>
-    <file preprocess="xml-stripblanks">unlock.ui</file>
   </gresource>
 </gresources>

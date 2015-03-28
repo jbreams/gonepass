@@ -24,8 +24,14 @@ struct _GonepassAppWindowPrivate {
     GtkTreeModel * item_list_sorter;
     GtkTreeModel * item_list_filterer;
     GtkLabel * item_name;
-
     GtkBox * entries_container;
+
+    GtkBox * locked_container;
+    GtkPaned * unlocked_container;
+
+    GtkEntry * master_password_field;
+    GtkButton * unlock_vault_button;
+    GtkFileChooserButton * vault_chooser_button;
 
     struct credentials_bag bag;
 };
@@ -129,6 +135,24 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     json_decref(decrypted_item);
 }
 
+static void unlock_button_cb(GtkButton * button, gpointer user) {
+    GonepassAppWindow * win = GONEPASS_APP_WINDOW(user);
+    GonepassAppWindowPrivate * priv = gonepass_app_window_get_instance_private(win);
+
+    const gchar * master_pass = gtk_entry_get_text(priv->master_password_field);
+    const gchar * vault_path = gtk_file_chooser_get_filename(
+        GTK_FILE_CHOOSER(priv->vault_chooser_button));
+
+    if(load_credentials(win, master_pass, vault_path, &priv->bag) == -1)
+        return;
+    gtk_window_set_title(GTK_WINDOW(win), priv->bag.vault_path);
+    update_item_list(win);
+
+    gtk_widget_set_visible(GTK_WIDGET(priv->locked_container), FALSE);
+    gtk_widget_set_visible(GTK_WIDGET(priv->unlocked_container), TRUE);
+    g_settings_set_string(priv->settings, "vault-path", vault_path);
+}
+
 int gonepass_app_window_credentials_loaded(GonepassAppWindow * win) {
     GonepassAppWindowPrivate * priv = gonepass_app_window_get_instance_private(win);
     return priv->bag.credentials_loaded;
@@ -155,12 +179,6 @@ static void gonepass_app_window_init(GonepassAppWindow * win) {
     gtk_tree_model_filter_set_visible_func(
         GTK_TREE_MODEL_FILTER(priv->item_list_filterer), item_list_filter_viewable, win, NULL);
 
-    if(load_credentials(win, &priv->bag) == -1) {
-        return;
-    }
-    gtk_window_set_title(GTK_WINDOW(win), priv->bag.vault_path);
-    update_item_list(win);
-
     gtk_tree_view_set_model(priv->item_list, GTK_TREE_MODEL(priv->item_list_filterer));
     selector = gtk_tree_view_get_selection(GTK_TREE_VIEW(priv->item_list));
     gtk_tree_selection_set_mode(selector, GTK_SELECTION_SINGLE);
@@ -175,6 +193,11 @@ static void gonepass_app_window_init(GonepassAppWindow * win) {
     gtk_tree_view_append_column(GTK_TREE_VIEW(priv->item_list), column);
 
     g_signal_connect(G_OBJECT(priv->item_search), "search-changed", G_CALLBACK(item_search_changed), win);
+    g_signal_connect(G_OBJECT(priv->unlock_vault_button), "clicked", G_CALLBACK(unlock_button_cb), win);
+
+    gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(priv->vault_chooser_button),
+        g_settings_get_string(priv->settings, "vault-path"));
+    gtk_window_set_default(GTK_WINDOW(win), GTK_WIDGET(priv->unlock_vault_button));
 }
 
 static void gonepass_app_window_dispose(GObject * object) {
@@ -199,6 +222,16 @@ static void gonepass_app_window_class_init(GonepassAppWindowClass * class) {
         GonepassAppWindow, entries_container);
     gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
         GonepassAppWindow, item_name);
+    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
+        GonepassAppWindow, vault_chooser_button);
+    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
+        GonepassAppWindow, master_password_field);
+    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
+        GonepassAppWindow, unlock_vault_button);
+    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
+        GonepassAppWindow, locked_container);
+    gtk_widget_class_bind_template_child_private(GTK_WIDGET_CLASS(class),
+        GonepassAppWindow, unlocked_container);
 }
 
 GonepassAppWindow * gonepass_app_window_new(GonepassApp * app) {

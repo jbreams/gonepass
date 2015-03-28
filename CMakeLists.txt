@@ -27,7 +27,6 @@ set (SOURCES
     gonepassapp.c
     item_builder.c
     main.c
-    unlockdialog.c
     ${RESOURCE_FILE}
 )
 
