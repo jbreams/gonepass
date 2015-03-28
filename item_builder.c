@@ -22,6 +22,45 @@ static void handle_reveal_button(GtkButton * button, gpointer data) {
         gtk_button_set_label(button, "_Reveal");
 }
 
+static void process_single_field(
+        GtkWidget * container,
+        int row_index,
+        const char * label,
+        const char * value,
+        int is_password) {
+
+    GtkWidget * label_widget = gtk_label_new(label);
+    gtk_widget_set_halign(GTK_WIDGET(label_widget), GTK_ALIGN_END);
+    gtk_widget_set_margin_end(GTK_WIDGET(label_widget), 5);
+    GtkWidget * value_widget = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(value_widget), value);
+    gtk_widget_set_hexpand(GTK_WIDGET(value_widget), TRUE);
+
+    g_object_set(G_OBJECT(value_widget),
+        "editable", FALSE,
+        NULL
+    );
+
+    GtkWidget * copy_button = NULL, *reveal_button = NULL;
+
+    if(is_password) {
+        gtk_entry_set_visibility(GTK_ENTRY(value_widget), FALSE);
+        copy_button = gtk_button_new_with_mnemonic("_Copy");
+        g_signal_connect(G_OBJECT(copy_button), "clicked",
+            G_CALLBACK(handle_copy_button), value_widget);
+        reveal_button = gtk_button_new_with_mnemonic("_Reveal");
+        g_signal_connect(G_OBJECT(reveal_button), "clicked",
+            G_CALLBACK(handle_reveal_button), value_widget);
+    }
+
+    gtk_grid_attach(GTK_GRID(container), label_widget, 0, row_index, 1, 1);
+    gtk_grid_attach(GTK_GRID(container), value_widget, 1, row_index, copy_button == NULL ? 3 : 1, 1);
+    if(copy_button) {
+        gtk_grid_attach(GTK_GRID(container), copy_button, 2, row_index, 1, 1);
+        gtk_grid_attach(GTK_GRID(container), reveal_button, 3, row_index, 1, 1);
+    }
+}
+
 static int process_fields_raw(json_t * input, GtkWidget * container, int * index,
     char * value_key, char * type_key, char * title_key) {
 
@@ -37,38 +76,11 @@ static int process_fields_raw(json_t * input, GtkWidget * container, int * index
         ) == -1)
             continue;
 
-        GtkWidget * label_widget = gtk_label_new(designation);
-        gtk_widget_set_halign(GTK_WIDGET(label_widget), GTK_ALIGN_END);
-        gtk_widget_set_margin_end(GTK_WIDGET(label_widget), 5);
-        GtkWidget * value_widget = gtk_entry_new();
-        gtk_entry_set_text(GTK_ENTRY(value_widget), item_value);
-        gtk_widget_set_hexpand(GTK_WIDGET(value_widget), TRUE);
+        if(strlen(item_value) == 0)
+            continue;
 
-        g_object_set(G_OBJECT(value_widget),
-            "editable", FALSE,
-            NULL
-        );
-
-        GtkWidget * copy_button = NULL, *reveal_button = NULL;
-
-        if(strcmp(item_type, "P") == 0) {
-            gtk_entry_set_visibility(GTK_ENTRY(value_widget), FALSE);
-            copy_button = gtk_button_new_with_mnemonic("_Copy");
-            g_signal_connect(G_OBJECT(copy_button), "clicked",
-                G_CALLBACK(handle_copy_button), value_widget);
-            reveal_button = gtk_button_new_with_mnemonic("_Reveal");
-            g_signal_connect(G_OBJECT(reveal_button), "clicked",
-                G_CALLBACK(handle_reveal_button), value_widget);
-        }
-        else {
-        }
-
-        gtk_grid_attach(GTK_GRID(container), label_widget, 0, row_index, 1, 1);
-        gtk_grid_attach(GTK_GRID(container), value_widget, 1, row_index, copy_button == NULL ? 3 : 1, 1);
-        if(copy_button) {
-            gtk_grid_attach(GTK_GRID(container), copy_button, 2, row_index, 1, 1);
-            gtk_grid_attach(GTK_GRID(container), reveal_button, 3, row_index, 1, 1);
-        }
+        int is_password = strcmp(item_type, "P") == 0 || strcmp(item_type, "concealed") == 0;
+        process_single_field(container, row_index, designation, item_value, is_password);
         row_index++;
     }
     *index = row_index;
@@ -104,12 +116,14 @@ static int process_fields(json_t * input, GtkWidget * container, int * index) {
 }
 
 int process_entries(json_t * input, GtkWidget * container) {
-    char * notes_plain = NULL;
-    json_t * fields = NULL, *sections = NULL;
+    char * notes_plain = NULL, *password = NULL;
+    json_t * fields = NULL, *sections = NULL, *urls = NULL;
     json_unpack(input,
-        "{ s?:o s?o s?s }",
+        "{ s?:o s?o s?s s?o s?s }",
         "fields", &fields,
         "sections", &sections,
+        "password", &password,
+        "URLs", &urls,
         "notesPlain", &notes_plain
     );
     int rc = 0;
@@ -122,9 +136,15 @@ int process_entries(json_t * input, GtkWidget * container) {
     gtk_box_pack_start(GTK_BOX(container), details_grid, TRUE, TRUE, 2);
     int row_index = 0;
 
+    if(password) {
+        GtkWidget * notes_label = gtk_label_new("Password");
+        gtk_grid_attach(GTK_GRID(details_grid), notes_label, 0, row_index++, 4, 1);
+        process_single_field(details_grid, row_index++, "password", password, 1);
+    }
+
     if(fields)
         rc = process_fields(fields, details_grid, &row_index);
-    else if(sections) {
+    if(sections) {
         json_t * section_obj;
         int section_index;
 
@@ -153,6 +173,21 @@ int process_entries(json_t * input, GtkWidget * container) {
             NULL
         );
         gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(notes_field), GTK_WRAP_WORD);
+    }
+
+    if(urls) {
+        json_t * url_obj;
+        int url_index;
+
+        GtkWidget * notes_label = gtk_label_new("URLs");
+        gtk_grid_attach(GTK_GRID(details_grid), notes_label, 0, row_index++, 4, 1);
+
+        json_array_foreach(urls, url_index, url_obj) {
+            const char * url;
+            json_unpack(url_obj, "{s:s}", "url", &url);
+            GtkWidget * link_button = gtk_link_button_new(url);
+            gtk_grid_attach(GTK_GRID(details_grid), link_button, 0, row_index++, 4, 1);
+        }
     }
 
     return 0;
