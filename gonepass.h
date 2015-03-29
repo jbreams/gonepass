@@ -36,6 +36,8 @@ GonepassApp * gonepass_app_new(void);
 GType gonepass_app_window_get_type(void);
 GonepassAppWindow * gonepass_app_window_new(GonepassApp * app);
 int gonepass_app_window_credentials_loaded(GonepassAppWindow * win);
+void gonepass_app_window_lock(GonepassAppWindow * win);
+void gonepass_app_window_refresh(GonepassAppWindow * win);
 
 int decrypt_item(json_t * input, struct credentials_bag * bag, char ** output);
 int load_credentials(

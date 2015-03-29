@@ -174,7 +174,7 @@ int decrypt_master_key(json_t * input, const char * master_pwd, struct master_ke
 }
 
 int decrypt_item(json_t * input, struct credentials_bag * bag, char ** output) {
-    const char *encrypted_encoded_payload, *security_level;
+    char *encrypted_encoded_payload = NULL, *security_level = NULL;
     EVP_CIPHER_CTX ctx;
 
     json_unpack(input, "{s:s s:s}",
@@ -182,11 +182,21 @@ int decrypt_item(json_t * input, struct credentials_bag * bag, char ** output) {
         "securityLevel", &security_level
     );
 
+    if(!encrypted_encoded_payload || !security_level) {
+        errmsg_box("Invalid item json");
+        return -1;
+    }
+
     struct master_key * master_key = NULL;
     if(strcmp(security_level, "SL5") == 0)
         master_key = &bag->level5_key;
     else if(strcmp(security_level, "SL3") == 0)
         master_key = &bag->level3_key;
+
+    if(master_key == NULL) {
+        errmsg_box("Invalid master key for item: %s", security_level);
+        return -1;
+    }
 
     uint8_t * encrypted_payload, salt[8], *real_encrypted_payload;
     uint8_t my_key[16], my_iv[16];

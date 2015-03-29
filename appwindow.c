@@ -49,6 +49,8 @@ static void update_item_list(GonepassAppWindow * win) {
         return;
     }
 
+    gtk_list_store_clear(priv->item_list_store);
+
     size_t contents_index;
     json_t * cur_item;
     GtkListStore * model = priv->item_list_store;
@@ -110,6 +112,9 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     snprintf(namebuf, sizeof(namebuf) - 1, "<span size=\"x-large\">%s</span>", name);
     gtk_label_set_markup(priv->item_name, namebuf);
 
+    gtk_container_foreach(GTK_CONTAINER(priv->entries_container),
+        clear_entries_container_cb, priv->entries_container);
+
     json_t * item_json = json_load_file(item_file_path, 0, &json_err);
     if(item_json == NULL) {
         printf("Cannot load item file! %s\n", json_err.text);
@@ -119,6 +124,8 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
 
     char * decrypted_payload;
     int payload_size = decrypt_item(item_json, &priv->bag, &decrypted_payload);
+    if(payload_size == -1)
+        return;
     json_decref(item_json);
 
     json_t * decrypted_item = json_loadb(decrypted_payload, payload_size, 0, &json_err);
@@ -127,9 +134,6 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
         return;
     }
 
-    const char *item_name;
-    gtk_container_foreach(GTK_CONTAINER(priv->entries_container),
-            clear_entries_container_cb, priv->entries_container);
     process_entries(decrypted_item, GTK_WIDGET(priv->entries_container));
     gtk_widget_show_all(GTK_WIDGET(priv->entries_container));
     json_decref(decrypted_item);
@@ -240,5 +244,32 @@ GonepassAppWindow * gonepass_app_window_new(GonepassApp * app) {
 }
 
 void gonepass_app_window_open(GonepassAppWindow * win, GFile * file) {
-    // don't do anything yet!
+    GFileType target_type = g_file_query_file_type(file, G_FILE_QUERY_INFO_NONE, NULL);
+    if(target_type != G_FILE_TYPE_DIRECTORY)
+        return;
+
+    GonepassAppWindowPrivate * priv = gonepass_app_window_get_instance_private(win);
+    gtk_file_chooser_set_filename(
+        GTK_FILE_CHOOSER(priv->vault_chooser_button),
+        g_file_get_path(file)
+    );
 }
+
+void gonepass_app_window_lock(GonepassAppWindow * win) {
+    GonepassAppWindowPrivate * priv = gonepass_app_window_get_instance_private(win);
+    gtk_entry_set_text(GTK_ENTRY(priv->master_password_field), "");
+
+    gtk_widget_set_visible(GTK_WIDGET(priv->unlocked_container), FALSE);
+    gtk_widget_set_visible(GTK_WIDGET(priv->locked_container), TRUE);
+
+    gtk_container_foreach(GTK_CONTAINER(priv->entries_container),
+        clear_entries_container_cb, priv->entries_container);
+    memset(&priv->bag, 0, sizeof(priv->bag));
+}
+
+void gonepass_app_window_refresh(GonepassAppWindow * win) {
+    GonepassAppWindowPrivate * priv = gonepass_app_window_get_instance_private(win);
+    if(priv->bag.credentials_loaded == 1)
+        update_item_list(win);
+}
+
