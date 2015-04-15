@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=Gonepass
+Comment=1Password reader for Gnome
+Exec=@CMAKE_INSTALL_PREFIX@/bin/gonepass %F
+Icon=gonepass.png
+Terminal=false

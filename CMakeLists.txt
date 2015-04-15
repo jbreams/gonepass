@@ -13,7 +13,6 @@ pkg_check_modules(JANSSON REQUIRED jansson)
 pkg_check_modules(OPENSSL REQUIRED openssl)
 
 
-
 # GResource
 include(GResource)
 gresource(${CMAKE_CURRENT_SOURCE_DIR} gonepassapp.gresource.xml
@@ -49,3 +48,22 @@ include(GSettings)
 add_schemas(gonepass ${CMAKE_CURRENT_SOURCE_DIR})
 
 install (TARGETS gonepass DESTINATION bin)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/gonepass.desktop.in
+    ${CMAKE_BINARY_DIR}/gonepass.desktop
+)
+
+install (
+    FILES
+        ${CMAKE_BINARY_DIR}/gonepass.desktop
+    DESTINATION
+        share/applications
+)
+
+install (
+    FILES
+        gonepass-icon.png
+    DESTINATION
+        share/pixmaps/gonepass.png
+)
