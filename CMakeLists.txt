@@ -65,5 +65,7 @@ install (
     FILES
         gonepass-icon.png
     DESTINATION
-        share/pixmaps/gonepass.png
+        share/pixmaps
+    RENAME
+        gonepass.png
 )
