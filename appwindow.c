@@ -43,7 +43,7 @@ static void update_item_list(GonepassAppWindow * win) {
     char vault_path[PATH_MAX];
     snprintf(vault_path, PATH_MAX, "%s/data/default/contents.js", priv->bag.vault_path);
     json_error_t json_err;
-    json_t * contents_js = json_load_file(vault_path, 0, &json_err);
+    json_t * contents_js = json_load_file(vault_path, JSON_ALLOW_NUL, &json_err);
     if(contents_js == NULL) {
         fprintf(stderr, "Error loading contents.js: %s", json_err.text);
         return;
@@ -115,7 +115,7 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     gtk_container_foreach(GTK_CONTAINER(priv->entries_container),
         clear_entries_container_cb, priv->entries_container);
 
-    json_t * item_json = json_load_file(item_file_path, 0, &json_err);
+    json_t * item_json = json_load_file(item_file_path, JSON_ALLOW_NUL, &json_err);
     if(item_json == NULL) {
         printf("Cannot load item file! %s\n", json_err.text);
         return;
@@ -128,7 +128,7 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
         return;
     json_decref(item_json);
 
-    json_t * decrypted_item = json_loadb(decrypted_payload, payload_size, 0, &json_err);
+    json_t * decrypted_item = json_loadb(decrypted_payload, payload_size, JSON_ALLOW_NUL, &json_err);
     if(decrypted_item == NULL) {
         printf("Error loading decrypted JSON: %s\n", json_err.text);
         return;

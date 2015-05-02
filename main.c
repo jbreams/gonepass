@@ -288,7 +288,7 @@ int load_credentials(
     char vault_path[PATH_MAX];
     GSettings * settings = g_settings_new ("org.gtk.gonepass");
     snprintf(vault_path, sizeof(vault_path), "%s/data/default/encryptionKeys.js", vault_folder);
-    json_t * encryption_keys_json = json_load_file(vault_path, 0, &errmsg);
+    json_t * encryption_keys_json = json_load_file(vault_path, JSON_ALLOW_NUL, &errmsg);
 
     if(encryption_keys_json == NULL) {
 
