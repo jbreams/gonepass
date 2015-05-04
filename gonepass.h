@@ -49,4 +49,6 @@ void clear_credentials(struct credentials_bag * bag);
 
 int process_entries(json_t * input, GtkWidget * container);
 
+void errmsg_box_win(GonepassAppWindow* parent, const char * msg, ...);
+
 #endif

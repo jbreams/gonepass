@@ -45,7 +45,8 @@ static void update_item_list(GonepassAppWindow * win) {
     json_error_t json_err;
     json_t * contents_js = json_load_file(vault_path, JSON_ALLOW_NUL, &json_err);
     if(contents_js == NULL) {
-        fprintf(stderr, "Error loading contents.js: %s", json_err.text);
+
+        errmsg_box_win(win, "Error loading contents.js: %s", json_err.text);
         return;
     }
 
@@ -59,6 +60,26 @@ static void update_item_list(GonepassAppWindow * win) {
         char * name, *uuid, *type;
         GtkTreeIter iter;
         json_unpack(cur_item, "[s s s]", &name, &type, &uuid);
+
+        sprintf(vault_path, "%s/data/default/%s.1password", priv->bag.vault_path, name);
+
+        json_t * item_json = json_load_file(vault_path, JSON_ALLOW_NUL, &json_err);
+        if(item_json == NULL) {
+            errmsg_box_win(win, "Cannot load item file! %s\n", json_err.text);
+            continue;
+        }
+
+        char * decrypted_payload;
+        int payload_size = decrypt_item(item_json, &priv->bag, &decrypted_payload);
+
+        if(payload_size > 0)
+            free(decrypted_payload);
+        json_decref(item_json);
+
+        // This is the smallest possible JSON object I could think of.
+        if(payload_size < 8)
+            continue;
+
         gtk_list_store_append(model, &iter);
         gtk_list_store_set(model, &iter,
             0, name,
@@ -117,7 +138,7 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
 
     json_t * item_json = json_load_file(item_file_path, JSON_ALLOW_NUL, &json_err);
     if(item_json == NULL) {
-        printf("Cannot load item file! %s\n", json_err.text);
+        errmsg_box_win(win, "Cannot load item file! %s\n", json_err.text);
         return;
     }
     g_free(uuid);
@@ -129,8 +150,9 @@ void item_list_selection_changed_cb(GtkTreeSelection * selection, GonepassAppWin
     json_decref(item_json);
 
     json_t * decrypted_item = json_loadb(decrypted_payload, payload_size, JSON_ALLOW_NUL, &json_err);
+    free(decrypted_payload);
     if(decrypted_item == NULL) {
-        printf("Error loading decrypted JSON: %s\n", json_err.text);
+        errmsg_box_win(win, "Error loading decrypted JSON: %s\n", json_err.text);
         return;
     }
 

@@ -255,18 +255,17 @@ void clear_credentials(struct credentials_bag * bag) {
 }
 
 GonepassAppWindow * error_parent_window = NULL;
-void errmsg_box(const char * msg, ...) {
+void errmsg_box_win_ap(GonepassAppWindow * parent, const char * msg, va_list ap) {
     GtkDialogFlags flags = GTK_DIALOG_DESTROY_WITH_PARENT;
 
     // Drop the message if there's no parent window
-    if(error_parent_window == NULL)
+    if(parent == NULL)
         return;
-    va_list ap;
-    va_start(ap, msg);
+
     char * formatted_msg;
     vasprintf(&formatted_msg, msg, ap);
     GtkWidget * dlg = gtk_message_dialog_new (
-        GTK_WINDOW(error_parent_window),
+        GTK_WINDOW(parent),
         flags,
         GTK_MESSAGE_ERROR,
         GTK_BUTTONS_CLOSE,
@@ -274,6 +273,18 @@ void errmsg_box(const char * msg, ...) {
     );
     gtk_dialog_run (GTK_DIALOG (dlg));
     gtk_widget_destroy (dlg);
+}
+
+void errmsg_box(const char * msg, ...) {
+    va_list ap;
+    va_start(ap, msg);
+    errmsg_box_win_ap(error_parent_window, msg, ap);
+}
+
+void errmsg_box_win(GonepassAppWindow* parent, const char * msg, ...) {
+    va_list ap;
+    va_start(ap, msg);
+    errmsg_box_win_ap(parent, msg, ap);
 }
 
 int load_credentials(
