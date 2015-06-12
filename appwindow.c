@@ -169,8 +169,10 @@ static void unlock_button_cb(GtkButton * button, gpointer user) {
     const gchar * vault_path = gtk_file_chooser_get_filename(
         GTK_FILE_CHOOSER(priv->vault_chooser_button));
 
-    if(load_credentials(win, master_pass, vault_path, &priv->bag) == -1)
+    if(load_credentials(win, master_pass, vault_path, &priv->bag) == -1) {
+        gtk_entry_set_text(priv->master_password_field, "");
         return;
+    }
     gtk_window_set_title(GTK_WINDOW(win), priv->bag.vault_path);
     update_item_list(win);
 
