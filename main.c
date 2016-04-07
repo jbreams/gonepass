@@ -175,16 +175,33 @@ int decrypt_master_key(json_t * input, const char * master_pwd, struct master_ke
 
 int decrypt_item(json_t * input, struct credentials_bag * bag, char ** output) {
     char *encrypted_encoded_payload = NULL, *security_level = NULL;
+    json_t * open_contents = NULL;
     EVP_CIPHER_CTX ctx;
 
-    json_unpack(input, "{s:s s:s}",
+    json_unpack(input, "{s:s s?s s?o}",
         "encrypted", &encrypted_encoded_payload,
-        "securityLevel", &security_level
+        "securityLevel", &security_level,
+        "openContents", &open_contents
     );
 
-    if(!encrypted_encoded_payload || !security_level) {
-        errmsg_box("Invalid item json");
+    if(!encrypted_encoded_payload) {
+        errmsg_box("Invalid item json, no encrypted content");
         return -1;
+    }
+
+    if (!security_level) {
+        if (!open_contents) {
+            errmsg_box("Invalid item json, no securityLevel and no openContents");
+            return -1;
+        } else {
+            json_unpack(open_contents, "{s:s}",
+                        "securityLevel", &security_level
+            );
+            if (!security_level) {
+                errmsg_box("Invalid item json, no securityLevel");
+                return -1;
+            }
+        }
     }
 
     struct master_key * master_key = NULL;
