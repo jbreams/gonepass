@@ -1,89 +1,112 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en-us">
   <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="description" content="Gonepass : GTK+ 1Password reader">
-
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
-
-    <title>Gonepass</title>
+    <meta charset="UTF-8">
+    <title>Gonepass by jbreams</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
-
   <body>
+    <section class="page-header">
+      <h1 class="project-name">Gonepass</h1>
+      <h2 class="project-tagline">GTK+ 1Password reader</h2>
+      <a href="https://github.com/jbreams/gonepass" class="btn">View on GitHub</a>
+      <a href="https://github.com/jbreams/gonepass/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/jbreams/gonepass/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/jbreams/gonepass">View on GitHub</a>
-
-          <h1 id="project_title">Gonepass</h1>
-          <h2 id="project_tagline">GTK+ 1Password reader</h2>
-
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/jbreams/gonepass/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/jbreams/gonepass/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <h1>
-<a id="gonepass" class="anchor" href="#gonepass" aria-hidden="true"><span class="octicon octicon-link"></span></a>Gonepass</h1>
+    <section class="main-content">
+      <h1>
+<a id="gonepass" class="anchor" href="#gonepass" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Gonepass</h1>
 
 <p>Do you love 1Password? Do you also run Linux? Don't you hate that your 1Password data can't be used on Linux? Use Gonepassword!</p>
 
 <h2>
-<a id="building" class="anchor" href="#building" aria-hidden="true"><span class="octicon octicon-link"></span></a>Building</h2>
+<a id="building" class="anchor" href="#building" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Building</h2>
 
 <p>Building gonepassword assumes you have the following things installed on your system</p>
 
 <ul>
 <li>Gtk+3</li>
+<li>Gtkmm 3.0</li>
 <li>Openssl</li>
-<li>Jansson (<a href="https://jansson.readthedocs.org/en/2.7/">https://jansson.readthedocs.org/en/2.7/</a>)</li>
 <li>pkg-config</li>
-<li>GNU make</li>
+<li>cmake &gt;= 3.0</li>
 <li>a working C compiler</li>
 </ul>
 
-<p>Right now it's only been tested on Gnome 3, so milage may vary.</p>
+<p>Gonepass uses cmake 3.0! To build, make a build directory and run cmake and then make/make install.</p>
 
-<p>A real build system is coming, I promise! For now just run make, and it will produce an executable called gonepassapp.</p>
+<pre><code> $ cmake ..
+-- The C compiler identification is GNU 5.3.0
+-- The CXX compiler identification is GNU 5.3.0
+-- Check for working C compiler: /usr/bin/cc
+-- Check for working C compiler: /usr/bin/cc -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found PkgConfig: /usr/bin/pkg-config (found version "0.29.1")
+-- Checking for module 'gtkmm-3.0'
+--   Found gtkmm-3.0, version 3.20.0
+-- Checking for module 'openssl'
+--   Found openssl, version 1.0.2g
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/jreams/Documents/git/gonepass/build
+
+ $ make
+[ 20%] Generating Resources.c
+Scanning dependencies of target gonepass
+[ 40%] Building CXX object CMakeFiles/gonepass.dir/main.cpp.o
+[ 60%] Building CXX object CMakeFiles/gonepass.dir/keychain.cpp.o
+[ 80%] Building C object CMakeFiles/gonepass.dir/Resources.c.o
+[100%] Linking CXX executable gonepass
+[100%] Built target gonepass
+</code></pre>
 
 <h2>
-<a id="great-now-what" class="anchor" href="#great-now-what" aria-hidden="true"><span class="octicon octicon-link"></span></a>Great, now what?</h2>
+<a id="great-now-what" class="anchor" href="#great-now-what" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Great, now what?</h2>
 
 <p>When you start one password point it at your password vault in Dropbox. You should select the folder that ends with <code>agilekeychain</code> and type in your master password.</p>
+
+<p><img src="https://raw.github.com/jbreams/gonepass/gh-pages/images/gonepass_unlock.png" alt="alt tag"></p>
 
 <p>If you want to load up multiple password vaults, just go to the Application menu and click <code>Load</code>, it will pop up a new window for selecting another password vault.</p>
 
 <p>The window for selecting password vaults will remember the last password vault it successfully loaded.</p>
 
+<p>Then just browse through your passwords!</p>
+
+<p><img src="https://raw.github.com/jbreams/gonepass/gh-pages/images/gonepass_main.png" alt="alt tag"></p>
+
 <h2>
-<a id="thats-pretty-useful-can-i-update-my-items" class="anchor" href="#thats-pretty-useful-can-i-update-my-items" aria-hidden="true"><span class="octicon octicon-link"></span></a>That's pretty useful, can I update my items?</h2>
+<a id="thats-pretty-useful-can-i-update-my-items" class="anchor" href="#thats-pretty-useful-can-i-update-my-items" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>That's pretty useful, can I update my items?</h2>
 
 <p>Not yet, sorry.</p>
 
 <h2>
-<a id="something-isnt-working" class="anchor" href="#something-isnt-working" aria-hidden="true"><span class="octicon octicon-link"></span></a>Something isn't working?</h2>
+<a id="something-isnt-working" class="anchor" href="#something-isnt-working" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Something isn't working?</h2>
 
 <p>Sorry about that, open an issue.</p>
-      </section>
-    </div>
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">Gonepass maintained by <a href="https://github.com/jbreams">jbreams</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/jbreams/gonepass">Gonepass</a> is maintained by <a href="https://github.com/jbreams">jbreams</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
       </footer>
-    </div>
 
-    
+    </section>
 
+  
   </body>
 </html>
