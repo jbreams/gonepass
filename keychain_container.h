@@ -4,6 +4,7 @@
 
 #include "keychain_view.h"
 #include "lock_screen.h"
+#include "helper.h"
 
 class KeychainContainer : public Gtk::Bin {
 public:
@@ -56,9 +57,7 @@ protected:
         try {
             keychain_object = std::make_shared<Keychain>(path, master_password);
         } catch (std::exception& e) {
-            auto top_level = dynamic_cast<Gtk::Window*>(get_toplevel());
-            Gtk::MessageDialog dlg(*top_level, e.what());
-            dlg.run();
+            errorDialog(e.what());
             return;
         }
         remove();

@@ -9,6 +9,7 @@
 
 #include "keychain.h"
 #include "evp_cipher.h"
+#include "helper.h"
 
 namespace {
 using OpensslKeyData = std::pair<EVPKey, EVPIv>;
@@ -398,7 +399,13 @@ void Keychain::reloadItems() {
     }
 
     for (const auto& contents_item : contents_json) {
-        loadItem(contents_item[0]);
+        try {
+            loadItem(contents_item[0]);
+        } catch (std::exception& e) {
+            std::stringstream ss;
+            ss << "Error loading item " << contents_item[2] << ": " << e.what();
+            errorDialog(ss.str());
+        }
     }
 
     loaded = true;
