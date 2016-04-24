@@ -188,16 +188,6 @@ AgileKeychainMasterKey::AgileKeychainMasterKey(const json& input,
 }
 
 json AgileKeychainMasterKey::decryptItem(const json& input) {
-    if (!hasAllKeys(input, "encrypted", "securityLevel"))
-        throw std::runtime_error("Item data does not have required fields");
-
-    auto securityLevel = input["securityLevel"];
-    // This should be checked by the caller, but just in case, we shouldn't try to
-    // do anything
-    // with data we know we can't decrypt.
-    if (securityLevel != level)
-        return nullptr;
-
     return decryptJSON(input["encrypted"]);
 }
 
@@ -294,12 +284,25 @@ void Keychain::loadItem(std::string uuid) {
     }
 
     auto typeName = item_json["typeName"];
+    std::string securityLevel;
+    if (item_json.find("securityLevel") == item_json.end()) {
+        auto openContents = item_json.find("openContents");
+        if (openContents == item_json.end())
+            throw std::runtime_error("Could not find security level for item");
+        securityLevel = (*openContents)["securityLevel"];
+    } else {
+        if (item_json.find("securityLevel") == item_json.end())
+            throw std::runtime_error("Could not find security level for item");
+        securityLevel = item_json["securityLevel"];
+    }
 
     json decrypted_item;
-    if (item_json["securityLevel"] == "SL5")
+    if (securityLevel == "SL5")
         decrypted_item = level5_key->decryptItem(item_json);
-    else if (item_json["securityLevel"] == "SL3")
+    else if (securityLevel == "SL3")
         decrypted_item = level3_key->decryptItem(item_json);
+    else
+        throw std::runtime_error("Invalid security level for item");
 
     item.title = item_json["title"];
     item.uuid = uuid;

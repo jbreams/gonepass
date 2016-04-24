@@ -69,7 +69,8 @@ protected:
         if (master_vault == new_vault) {
             unlockAllVaults();
         }
-        updateCache(title, password);
+        if (master_vault->getKeychain())
+            updateCache(title, password);
 
         if (container_list.find(new_vault) == container_list.end()) {
             app_menu->addVault(title, app_menu_select_cb);
