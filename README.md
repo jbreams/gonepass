@@ -4,22 +4,18 @@ Do you love 1Password? Do you also run Linux? Don't you hate that your 1Password
 ## Building
 Building gonepassword assumes you have the following things installed on your system
 * Gtk+3
+* Gtkmm 3.0
 * Openssl
-* Jansson (https://jansson.readthedocs.org/en/2.7/)
 * pkg-config
 * cmake >= 3.0
 * a working C compiler
 
-Right now it's only been tested on Gnome 3, so mileage may vary.
-
 Gonepass uses cmake 3.0! To build, make a build directory and run cmake and then make/make install.
 
 ```
-$ mkdir build
-$ cd build/
-$ cmake ..
--- The C compiler identification is GNU 4.9.2
--- The CXX compiler identification is GNU 4.9.2
+ $ cmake ..
+-- The C compiler identification is GNU 5.3.0
+-- The CXX compiler identification is GNU 5.3.0
 -- Check for working C compiler: /usr/bin/cc
 -- Check for working C compiler: /usr/bin/cc -- works
 -- Detecting C compiler ABI info
@@ -32,39 +28,23 @@ $ cmake ..
 -- Detecting CXX compiler ABI info - done
 -- Detecting CXX compile features
 -- Detecting CXX compile features - done
--- Found PkgConfig: /usr/bin/pkg-config (found version "0.28")
--- checking for module 'gtk+-3.0'
---   found gtk+-3.0, version 3.14.9
--- checking for module 'jansson'
---   found jansson, version 2.7
--- checking for module 'openssl'
---   found openssl, version 1.0.2
--- GSettings schemas will be compiled.
--- GSettings schemas will be compiled in-place.
--- GSettings schemas will be installed into /usr/share/glib-2.0/schemas/
+-- Found PkgConfig: /usr/bin/pkg-config (found version "0.29.1")
+-- Checking for module 'gtkmm-3.0'
+--   Found gtkmm-3.0, version 3.20.0
+-- Checking for module 'openssl'
+--   Found openssl, version 1.0.2g
 -- Configuring done
 -- Generating done
--- Build files have been written to: gonepass/build
-$ make
-[ 14%] Generating Resources.c
+-- Build files have been written to: /home/jreams/Documents/git/gonepass/build
+
+ $ make
+[ 20%] Generating Resources.c
 Scanning dependencies of target gonepass
-[ 28%] Building C object CMakeFiles/gonepass.dir/appwindow.c.o
-[ 42%] Building C object CMakeFiles/gonepass.dir/gonepassapp.c.o
-[ 57%] Building C object CMakeFiles/gonepass.dir/item_builder.c.o
-[ 71%] Building C object CMakeFiles/gonepass.dir/main.c.o
-[ 85%] Building C object CMakeFiles/gonepass.dir/unlockdialog.c.o
-[100%] Building C object CMakeFiles/gonepass.dir/Resources.c.o
-Linking C executable gonepass
-Copying schema gonepass/gonepassapp.gschema.xml to gonepass/build/gsettings
-Compiling schemas in folder: gonepass/build/gsettings
+[ 40%] Building CXX object CMakeFiles/gonepass.dir/main.cpp.o
+[ 60%] Building CXX object CMakeFiles/gonepass.dir/keychain.cpp.o
+[ 80%] Building C object CMakeFiles/gonepass.dir/Resources.c.o
+[100%] Linking CXX executable gonepass
 [100%] Built target gonepass
-$ sudo make install
-[100%] Built target gonepass
-Install the project...
--- Install configuration: ""
--- Up-to-date: /usr/share/glib-2.0/schemas/gonepassapp.gschema.xml
--- Compiling GSettings schemas
--- Installing: /usr/local/bin/gonepass
 ```
 
 ## Great, now what?
