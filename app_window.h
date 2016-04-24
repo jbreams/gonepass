@@ -138,25 +138,21 @@ protected:
 
     void unlockAllVaults() {
         if (!master_vault) {
-            std::cout << "Master vault not found!" << std::endl;
             return;
         }
 
         if (config_cache.find("loaded_vaults") == config_cache.end()) {
-            std::cout << "Could not find loaded_vaults" << std::endl;
             return;
         }
         auto cached_vaults = config_cache["loaded_vaults"];
 
         for (auto vault : container_list) {
             if (vault == master_vault) {
-                std::cout << "Skip master vault";
                 continue;
             }
 
             auto cur_vault_data = cached_vaults.find(vault->getPath());
             if (cur_vault_data == cached_vaults.end()) {
-                std::cout << "No cached data found" << std::endl;
                 continue;
             }
             auto decrypted_data = master_vault->getKeychain()->decryptJSON(*cur_vault_data);
