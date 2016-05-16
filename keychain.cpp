@@ -2,6 +2,7 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <random>
 #include <glibmm.h>
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
