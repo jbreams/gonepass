@@ -1,12 +1,12 @@
 #pragma once
-#include <set>
 #include <functional>
+#include <set>
 
 #include <gtkmm.h>
 
-#include "keychain_container.h"
 #include "app_menu.h"
 #include "config_storage.h"
+#include "keychain_container.h"
 
 class MainWindow : public Gtk::ApplicationWindow {
 public:

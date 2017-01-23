@@ -2,9 +2,9 @@
 
 #include <gtkmm.h>
 
+#include "helper.h"
 #include "keychain_view.h"
 #include "lock_screen.h"
-#include "helper.h"
 
 class KeychainContainer : public Gtk::Bin {
 public:

@@ -1,7 +1,7 @@
-#include "item_view.h"
-#include "search_list.h"
-#include "keychain_view.h"
 #include "app_window.h"
+#include "item_view.h"
+#include "keychain_view.h"
+#include "search_list.h"
 
 MainWindow* getMainWindow() {
     static MainWindow win;

@@ -1,8 +1,8 @@
 #pragma once
 #include <array>
-#include <vector>
-#include <openssl/evp.h>
 #include <openssl/err.h>
+#include <openssl/evp.h>
+#include <vector>
 
 using EVPKey = std::array<uint8_t, EVP_MAX_KEY_LENGTH>;
 using EVPIv = std::array<uint8_t, EVP_MAX_IV_LENGTH>;
@@ -20,18 +20,35 @@ public:
     char err_msg_buf[128];
 };
 
-struct EVPCipher {
+class EVPCipher {
+private:
+    std::function<void(EVP_CIPHER_CTX*)> cipherFreeFn = [](EVP_CIPHER_CTX* ptr) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        delete ptr;
+#else
+        EVP_CIPHER_CTX_free(ptr);
+#endif
+    };
+
+public:
     EVPCipher(const EVP_CIPHER* type, const EVPKey& key, const EVPIv& iv, bool encrypt) {
-        EVP_CIPHER_CTX_init(&ctx);
-        EVP_CipherInit_ex(&ctx, type, nullptr, key.data(), iv.data(), encrypt ? 1 : 0);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        ctx = std::unique_ptr<EVP_CIPHER_CTX, decltype(cipherFreeFn)>(new EVP_CIPHER_CTX,
+                                                                      cipherFreeFn);
+#else
+        ctx = std::unique_ptr<EVP_CIPHER_CTX, decltype(cipherFreeFn)>(EVP_CIPHER_CTX_new(),
+                                                                      cipherFreeFn);
+#endif
+        EVP_CIPHER_CTX_init(ctx.get());
+        EVP_CipherInit_ex(ctx.get(), type, nullptr, key.data(), iv.data(), encrypt ? 1 : 0);
     }
 
     ~EVPCipher() {
-        EVP_CIPHER_CTX_cleanup(&ctx);
+        EVP_CIPHER_CTX_cleanup(ctx.get());
     }
 
     void expandAccumulator(size_t inputSize) {
-        auto block_size = EVP_CIPHER_CTX_block_size(&ctx);
+        auto block_size = EVP_CIPHER_CTX_block_size(ctx.get());
         const auto maxIncrease = (((inputSize / block_size) + 1) * block_size);
         accumulator.resize(accumulator.size() + maxIncrease);
     }
@@ -40,9 +57,11 @@ struct EVPCipher {
         const auto oldSize = accumulator.size();
         expandAccumulator(data.size());
         int encryptedSize = 0;
-        if (EVP_CipherUpdate(
-                &ctx, accumulator.data() + oldSize, &encryptedSize, data.data(), data.size()) !=
-            1) {
+        if (EVP_CipherUpdate(ctx.get(),
+                             accumulator.data() + oldSize,
+                             &encryptedSize,
+                             data.data(),
+                             data.size()) != 1) {
             throw EVPCipherException();
         }
 
@@ -56,7 +75,8 @@ struct EVPCipher {
 
         auto data_ptr = reinterpret_cast<const uint8_t*>(data.data());
         if (EVP_CipherUpdate(
-                &ctx, accumulator.data() + oldSize, &encryptedSize, data_ptr, data.size()) != 1) {
+                ctx.get(), accumulator.data() + oldSize, &encryptedSize, data_ptr, data.size()) !=
+            1) {
             throw EVPCipherException();
         }
 
@@ -70,7 +90,7 @@ struct EVPCipher {
         // Add one more block size to the accumulator;
         expandAccumulator(1);
         int encryptSize = oldSize;
-        if (EVP_CipherFinal_ex(&ctx, accumulator.data() + oldSize, &encryptSize) != 1) {
+        if (EVP_CipherFinal_ex(ctx.get(), accumulator.data() + oldSize, &encryptSize) != 1) {
             throw EVPCipherException();
         }
         accumulator.resize(oldSize + encryptSize);
@@ -97,7 +117,7 @@ struct EVPCipher {
         return accumulator.cend();
     }
 
-    EVP_CIPHER_CTX ctx;
+    std::unique_ptr<EVP_CIPHER_CTX, decltype(cipherFreeFn)> ctx;
     std::vector<uint8_t> accumulator;
     bool finalized = false;
 };

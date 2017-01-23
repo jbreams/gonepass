@@ -1,6 +1,6 @@
 #pragma once
-#include <memory>
 #include <gtkmm.h>
+#include <memory>
 
 #include "search_list.h"
 
