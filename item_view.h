@@ -1,6 +1,7 @@
 #pragma once
 #include <gtkmm.h>
 
+#include "helper.h"
 #include "keychain.h"
 
 class ItemView : public Gtk::Grid {
@@ -64,10 +65,21 @@ protected:
         attach(*label_widget, 0, my_index, 1, 1);
 
         auto value_widget = Gtk::manage(new Gtk::Entry());
-        value_widget->set_text(value);
         value_widget->set_hexpand(true);
         value_widget->set_editable(false);
-        if (conceal)
+
+        const auto isTOTP = isTOTPURI(value);
+        if (isTOTP) {
+            try {
+                value_widget->set_text(calculateTOTP(value));
+            } catch(std::exception& e) {
+                errorDialog(e.what());
+            }
+        } else {
+            value_widget->set_text(value);
+        }
+
+        if (conceal && !isTOTP)
             value_widget->set_visibility(false);
         attach(*value_widget, 1, my_index, conceal ? 1 : 3, 1);
 
@@ -80,16 +92,26 @@ protected:
                 clipboard->store();
             });
             attach(*copy_button, 2, my_index, 1, 1);
+            if (isTOTP) {
+                auto calculate_button = Gtk::manage(new Gtk::Button("_Calculate", true));
+                calculate_button->signal_clicked().connect([value, value_widget]() {
+                    try {
+                        value_widget->set_text(calculateTOTP(value));
+                    } catch(std::exception& e) {
+                        errorDialog(e.what());
+                    }
+                });
+                attach(*calculate_button, 3, my_index, 1, 1);
+            } else {
+                auto reveal_button = Gtk::manage(new Gtk::Button("_Reveal", true));
+                reveal_button->signal_clicked().connect([reveal_button, value_widget]() {
+                    bool visible = value_widget->get_visibility();
+                    visible = !visible;
 
-            auto reveal_button = Gtk::manage(new Gtk::Button("_Reveal", true));
-            reveal_button->signal_clicked().connect([reveal_button, value_widget]() {
-                bool visible = value_widget->get_visibility();
-                visible = !visible;
-
-                value_widget->set_visibility(visible);
-                reveal_button->set_label(visible ? "_Hide" : "_Reveal");
-            });
-            attach(*reveal_button, 3, my_index, 1, 1);
+                    value_widget->set_visibility(visible);
+                    reveal_button->set_label(visible ? "_Hide" : "_Reveal");
+                });
+            }
         }
     }
     int row_index = 0;

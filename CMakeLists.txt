@@ -24,6 +24,7 @@ link_directories (${GTKMM_LIBRARY_DIRS} ${OPENSSL_LIBRARY_DIRS})
 set (SOURCES
     main.cpp
     keychain.cpp
+    totp.cpp
     ${RESOURCE_FILE}
 )
 
