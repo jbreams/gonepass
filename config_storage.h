@@ -42,7 +42,8 @@ public:
         auto cache_file = Gio::File::create_for_path(cache_file_path);
         const auto cache_dump = cache_object.dump();
         std::string empty;
-        cache_file->replace_contents(cache_dump.c_str(), cache_dump.size(), empty, empty);
+        cache_file->replace_contents(
+            cache_dump.c_str(), cache_dump.size(), empty, empty, false, Gio::FILE_CREATE_PRIVATE);
     }
 
     json& operator[](std::string key) {

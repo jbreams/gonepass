@@ -99,10 +99,10 @@ protected:
             std::stringstream title_builder;
             title_builder << path << " (master vault)";
             app_menu->prependVault(title_builder.str(), app_menu_select_cb);
+            master_vault = new_vault;
         } else
             app_menu->addVault(path, app_menu_select_cb);
-        if (master)
-            master_vault = new_vault;
+        app_menu_select_cb();
     }
 
     void lockVaults() {
