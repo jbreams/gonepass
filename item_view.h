@@ -72,7 +72,7 @@ protected:
         if (isTOTP) {
             try {
                 value_widget->set_text(calculateTOTP(value));
-            } catch(std::exception& e) {
+            } catch (std::exception& e) {
                 errorDialog(e.what());
             }
         } else {
@@ -97,7 +97,7 @@ protected:
                 calculate_button->signal_clicked().connect([value, value_widget]() {
                     try {
                         value_widget->set_text(calculateTOTP(value));
-                    } catch(std::exception& e) {
+                    } catch (std::exception& e) {
                         errorDialog(e.what());
                     }
                 });

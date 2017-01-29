@@ -1,7 +1,7 @@
 #include <algorithm>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
-#include <cmath>
 #include <regex>
 #include <string>
 #include <unordered_map>
@@ -18,12 +18,12 @@ std::vector<uint8_t> base32Decode(const std::string& encoded) {
     unsigned int curByte = 0;
     int bits = 0;
 
-    for (auto ch: encoded) {
+    for (auto ch : encoded) {
         if (ch >= 'A' && ch <= 'Z') {
-           ch -= 'A';
+            ch -= 'A';
         } else if (ch >= '2' && ch <= '7') {
-           ch -= '2';
-           ch += 26;
+            ch -= '2';
+            ch += 26;
         }
 
         curByte = (curByte << 5) | ch;
@@ -54,15 +54,16 @@ public:
         ctx = std::unique_ptr<HMAC_CTX>(new HMAC_CTX);
         HMAC_CTX_init(ctx.get());
 #else
-        ctx = std::unique_ptr<HMAC_CTX, decltype(hmacFreeFn)>(HMAC_CTX_new(),
-                                                                      hmacFreeFn);
+        ctx = std::unique_ptr<HMAC_CTX, decltype(hmacFreeFn)>(HMAC_CTX_new(), hmacFreeFn);
 #endif
         HMAC_Init_ex(ctx.get(), key.data(), key.size(), digest, nullptr);
     }
 
-	void update(const std::vector<uint8_t>& s) {
-		HMAC_Update(ctx.get(), reinterpret_cast<const unsigned char*>(s.data()), static_cast<unsigned int>(s.size()));
-	}
+    void update(const std::vector<uint8_t>& s) {
+        HMAC_Update(ctx.get(),
+                    reinterpret_cast<const unsigned char*>(s.data()),
+                    static_cast<unsigned int>(s.size()));
+    }
 
     std::vector<uint8_t> finalize() {
         std::vector<uint8_t> finalHash(HMAC_size(ctx.get()));
@@ -73,42 +74,42 @@ public:
         }
         return std::move(finalHash);
     }
-    
+
 private:
     std::unique_ptr<HMAC_CTX, decltype(hmacFreeFn)> ctx;
-
 };
 
-std::string calculateTOTPInternal(const EVP_MD* algo, uint64_t counter, int digits, const std::vector<uint8_t>& key) {
-	std::vector<uint8_t> counterArr(8);
-	for (int i = 7; i >= 0; i--) {
-		counterArr[i] = counter & 0xff;
-		counter >>= 8;
-	}
+std::string calculateTOTPInternal(const EVP_MD* algo,
+                                  uint64_t counter,
+                                  int digits,
+                                  const std::vector<uint8_t>& key) {
+    std::vector<uint8_t> counterArr(8);
+    for (int i = 7; i >= 0; i--) {
+        counterArr[i] = counter & 0xff;
+        counter >>= 8;
+    }
 
     HMACWrapper hmac(algo, key);
     hmac.update(counterArr);
     auto finalHmac = hmac.finalize();
 
     const auto offset = finalHmac[19] & 0xf;
-    uint32_t truncated =
-		(finalHmac[offset]  & 0x7f) << 24
-        | (finalHmac[offset+1] & 0xff) << 16
-        | (finalHmac[offset+2] & 0xff) <<  8
-        | (finalHmac[offset+3] & 0xff);
+    uint32_t truncated = (finalHmac[offset] & 0x7f) << 24 | (finalHmac[offset + 1] & 0xff) << 16 |
+        (finalHmac[offset + 2] & 0xff) << 8 | (finalHmac[offset + 3] & 0xff);
 
-	std::stringstream ss;
-	const int digitsPow = pow(10, digits);
-	ss << std::setw(digits) << std::setfill('0') << truncated % digitsPow; 
-	return ss.str();
+    std::stringstream ss;
+    const int digitsPow = pow(10, digits);
+    ss << std::setw(digits) << std::setfill('0') << truncated % digitsPow;
+    return ss.str();
 }
 
 const auto kURIPattern = "otpauth://(totp|hotp)/(?:[^\\?]+)\\?((?:(?:[^=]+)=(?:[^\\&]+)\\&?)+)";
 const auto kURIRegex = std::regex(kURIPattern, std::regex::ECMAScript | std::regex::optimize);
 const auto kQueryComponentPattern = "([^=]+)=([^\\&]+)&?";
-const auto kQueryComponentRegex = std::regex(kQueryComponentPattern, std::regex::ECMAScript | std::regex::optimize);
+const auto kQueryComponentRegex =
+    std::regex(kQueryComponentPattern, std::regex::ECMAScript | std::regex::optimize);
 
-} // namespace
+}  // namespace
 
 bool isTOTPURI(const std::string& uri) {
     std::smatch match;
@@ -118,8 +119,8 @@ bool isTOTPURI(const std::string& uri) {
 std::string calculateTOTP(const std::string& uri) {
     std::smatch match;
     if (!std::regex_match(uri, match, kURIRegex)) {
-        throw std::runtime_error("Error parsing OTP URI");   
-    } 
+        throw std::runtime_error("Error parsing OTP URI");
+    }
 
     const auto type = match[1].str();
     if (type != "totp") {
@@ -162,13 +163,12 @@ std::string calculateTOTP(const std::string& uri) {
     }
 
     const auto key = base32Decode(params["secret"]);
-	uint64_t counter = now / period;
+    uint64_t counter = now / period;
 
-	int digits = 6;
-	if (params.find("digits") != params.end()) {
-		digits = std::stoi(params["digits"]);
-	}
+    int digits = 6;
+    if (params.find("digits") != params.end()) {
+        digits = std::stoi(params["digits"]);
+    }
 
-	return calculateTOTPInternal(algo, counter, digits, key);
+    return calculateTOTPInternal(algo, counter, digits, key);
 }
-
