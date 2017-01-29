@@ -2,6 +2,7 @@
 #include <gtkmm.h>
 #include <memory>
 
+#include "item_view.h"
 #include "search_list.h"
 
 class KeychainView : public Gtk::HPaned {
