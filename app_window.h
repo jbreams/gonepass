@@ -17,6 +17,8 @@ public:
             {"_Refresh Vaults", [this]() { refreshVaults(); }},
             {"_Quit", [this]() { get_application()->quit(); }}};
 
+        set_default_geometry(800, 480);
+
         app_menu = std::unique_ptr<AppMenu>(new AppMenu(actions));
 
         set_titlebar(header_bar);
