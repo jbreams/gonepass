@@ -42,6 +42,7 @@ public:
         password_field.signal_activate().connect([this]() { unlock_button.clicked(); });
 
         show_all_children();
+        password_field.grab_focus();
     };
 
     std::string getPassword() {
