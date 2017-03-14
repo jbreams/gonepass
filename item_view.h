@@ -111,6 +111,7 @@ protected:
                     value_widget->set_visibility(visible);
                     reveal_button->set_label(visible ? "_Hide" : "_Reveal");
                 });
+                attach(*reveal_button, 3, my_index, 1, 1);
             }
         }
     }
