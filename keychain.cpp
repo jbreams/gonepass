@@ -400,12 +400,14 @@ void Keychain::reloadItems() {
     }
 
     for (const auto& contents_item : contents_json) {
-        try {
-            loadItem(contents_item[0]);
-        } catch (std::exception& e) {
-            std::stringstream ss;
-            ss << "Error loading item " << contents_item[2] << ": " << e.what();
-            errorDialog(ss.str());
+        if(contents_item[1] != "system.Tombstone") {
+            try {
+                loadItem(contents_item[0]);
+            } catch (std::exception& e) {
+                std::stringstream ss;
+                ss << "Error loading item " << contents_item[2] << ": " << e.what();
+                errorDialog(ss.str());
+            }
         }
     }
 
