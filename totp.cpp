@@ -41,7 +41,7 @@ std::vector<uint8_t> base32Decode(const std::string& encoded) {
 class HMACWrapper {
 private:
     std::function<void(HMAC_CTX*)> hmacFreeFn = [](HMAC_CTX* ptr) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
         abort();
 #else
         HMAC_CTX_free(ptr);
@@ -50,7 +50,7 @@ private:
 
 public:
     HMACWrapper(const EVP_MD* digest, const std::vector<uint8_t>& key) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
         ctx = std::unique_ptr<HMAC_CTX>(new HMAC_CTX);
         HMAC_CTX_init(ctx.get());
 #else

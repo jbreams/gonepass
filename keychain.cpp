@@ -54,7 +54,11 @@ std::vector<uint8_t> base64Decode(const std::string& data) {
     std::vector<uint8_t> ret(data.size());
 
     auto b64 = BIO_new(BIO_f_base64());
+#if defined(LIBRESSL_VERSION_NUMBER)
+    auto bmem = BIO_new_mem_buf((char*)data.c_str(), data.size());
+#else
     auto bmem = BIO_new_mem_buf(data.c_str(), data.size());
+#endif
     bmem = BIO_push(b64, bmem);
     BIO_set_flags(bmem, BIO_FLAGS_BASE64_NO_NL);
     int size = BIO_read(bmem, ret.data(), data.size());
