@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <regex>
 #include <string>
 #include <unordered_map>
