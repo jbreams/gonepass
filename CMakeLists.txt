@@ -9,7 +9,8 @@ SET( PKGDATADIR ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR} )
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTKMM REQUIRED gtkmm-3.0)
-pkg_check_modules(OPENSSL REQUIRED openssl)
+
+find_package(OpenSSL REQUIRED)
 
 set (CMAKE_CXX_STANDARD 11)
 
@@ -18,8 +19,8 @@ include(GResource)
 gresource(${CMAKE_CURRENT_SOURCE_DIR} gonepass.gresource.xml
     ${CMAKE_BINARY_DIR} RESOURCE_FILE)
 
-include_directories (${GTKMM_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIRS})
-link_directories (${GTKMM_LIBRARY_DIRS} ${OPENSSL_LIBRARY_DIRS})
+include_directories (${GTKMM_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
+link_directories (${GTKMM_LIBRARY_DIRS})
 
 set (SOURCES
     main.cpp
